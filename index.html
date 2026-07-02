@@ -516,14 +516,13 @@
     <div class="kicker rv">Rozdział 1 — rozbieg</div>
     <h2 class="rv">Cztery miesiące,<br>które zmieniły wszystko</h2>
     <p class="lead rv d1">9 marca 2026, kilka tygodni po operacji, pierwsze kliknięcie „dalej" —
-      <b>„Pierwsze koty za płoty"</b>, 2,7 km. Każdy punkt to miesiąc. Z <b>13 km</b> w marcu urosło do
-      <b>64 km</b> w maju, Twojego najmocniejszego miesiąca. Nie ma tu roku 2014 ani 2017 — jest jedna
-      wiosna, w której z nikąd stałaś się kimś, kto biega półmaratony.</p>
-    <div class="area-wrap rv"><svg id="monthArea" viewBox="0 0 1000 280" preserveAspectRatio="none"></svg></div>
-    <div class="edu rv">🌱 <b>Tak wygląda „od zera".</b> W styczniu i lutym Cię tu nie było — start to marzec.
-      Nikt Ci nie obiecał, że pójdzie łatwo — po prostu wychodziłaś raz za razem, aż z „może kiedyś"
-      zrobiło się „to już jestem ja".
-      A do czerwca ta krzywa ani razu nie wróciła do zera. To nie zryw, to nowy nawyk.</div>
+      <b>„Pierwsze koty za płoty"</b>, 2,7 km. Każdy słupek to jeden miesiąc — <b>ile razy wyszłaś pobiegać</b>.
+      Styczeń i luty: zero (operacja). Potem ruszyło: <b>5</b> biegów w marcu, <b>7</b> w kwietniu, aż
+      <b>13</b> w maju — Twoim najmocniejszym miesiącu.</p>
+    <div class="chart bars rv" id="monthBars"></div>
+    <div class="edu rv">🌱 <b>Tak wygląda „od zera".</b> Dwa pierwsze słupki to pustka — luty to operacja,
+      nie bieganie. Ale gdy raz ruszyłaś w marcu, już nie odpuściłaś: każdy kolejny miesiąc to kolejne
+      wyjścia. Nie zryw — nowy nawyk.</div>
   </section>
 
   <!-- ZONES -->
@@ -744,28 +743,22 @@ heroObs.observe($('.hero'));
   }})},{threshold:.3}).observe(wrap);
 })();
 
-/* ---------- monthly area chart ---------- */
+/* ---------- monthly run-count bars (from January of the first year) ---------- */
 (function(){
-  const svg=$('#monthArea'); const W=1000,H=280,pad=6;
-  const m=DATA.months; const max=Math.max(...m.map(x=>x.km));
-  const x=i=>pad+i*(W-2*pad)/(m.length-1);
-  const y=v=>H-8-(v/max)*(H-26);
-  let line=`M ${x(0)} ${y(m[0].km)}`;
-  m.forEach((p,i)=>{if(i)line+=` L ${x(i)} ${y(p.km)}`;});
-  const area=line+` L ${x(m.length-1)} ${H} L ${x(0)} ${H} Z`;
-  svg.innerHTML=`
-    <defs>
-      <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#FF8FD0" stop-opacity=".55"/>
-        <stop offset="1" stop-color="#FF8FD0" stop-opacity="0"/>
-      </linearGradient>
-      <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0" stop-color="#7FD1FF"/><stop offset="1" stop-color="#E23A8F"/>
-      </linearGradient>
-    </defs>
-    <path class="area-path" d="${area}" fill="url(#ag)"/>
-    <path class="line-path" d="${line}" fill="none" stroke="url(#lg)" stroke-width="2.5"
-      stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+  if(!$('#monthBars'))return;
+  const map={}; (DATA.months||[]).forEach(m=>map[m.ym]=m.runs);
+  const y0=(DATA.years&&DATA.years[0]&&DATA.years[0].year)||2026;
+  const last=(DATA.months&&DATA.months.length)?DATA.months[DATA.months.length-1].ym:(y0+'-01');
+  const [ly,lm]=last.split('-').map(Number);
+  const MON=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  const series=[]; let yy=y0,mm=1;
+  while(yy<ly||(yy===ly&&mm<=lm)){
+    const ym=`${yy}-${String(mm).padStart(2,'0')}`;
+    series.push({runs:map[ym]||0,label:MON[mm-1]});
+    if(++mm>12){mm=1;yy++;}
+  }
+  const maxR=Math.max(...series.map(s=>s.runs),1);
+  simpleBars('#monthBars',series,s=>s.runs,s=>s.label,(s)=>s.runs===maxR);
 })();
 
 /* ---------- zone polarization stacks ---------- */
