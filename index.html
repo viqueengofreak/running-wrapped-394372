@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="robots" content="noindex, nofollow"/>
+<title>Running Wrapped · Wrocław 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{
+    --ink:#0b0b0f; --ink2:#15151d; --line:#26262f;
+    --cream:#f5efe6; --muted:#8c8c9c;
+    --a1:#7FD1FF; --a2:#FF8FD0; --a3:#E23A8F;
+    --z1:#3E92CC; --z2:#2BAA7F; --z3:#F2C94C; --z4:#F2994A; --z5:#E5484D;
+    --grad:linear-gradient(100deg,var(--a1),var(--a2) 55%,var(--a3));
+    /* ── structural tokens ─ single source of truth for spacing/radii/type ──
+       4px-based scale (adapted from a Fitness & Wellness token set). Theme colours
+       stay above; these replace ad-hoc literals so spacing/radius/line-height stay
+       consistent. Off-scale legacy spacings migrate to --sp-* incrementally. */
+    --sp-xs:4px; --sp-sm:8px; --sp-md:16px; --sp-lg:24px; --sp-xl:32px; --sp-2xl:48px; --sp-3xl:64px; --sp-4xl:96px;
+    --r-sm:6px; --r-md:12px; --r-lg:16px; --r-xl:24px; --r-full:9999px;
+    --lh-head:1.06; --lh-display:1.08;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--ink); color:var(--cream);
+    font-family:'Hanken Grotesk',system-ui,sans-serif; line-height:1.5;
+    overflow-x:hidden;
+  }
+  /* grain + glow atmosphere */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .glow{position:fixed;border-radius:50%;filter:blur(120px);opacity:.22;z-index:0;pointer-events:none}
+  .glow.g1{width:560px;height:560px;background:var(--a2);top:-160px;right:-120px}
+  .glow.g2{width:480px;height:480px;background:var(--a3);bottom:10%;left:-160px;opacity:.16}
+
+  main{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 24px;
+    display:flex;flex-direction:column}
+  section{padding:13vh 0;border-bottom:1px solid var(--line)}
+  section:last-child{border-bottom:0}
+
+  .kicker{font-family:'Anton';letter-spacing:.22em;text-transform:uppercase;font-size:13px;
+    color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text;margin-bottom:18px}
+  h2{font-family:'Anton';font-weight:400;font-size:clamp(34px,6vw,68px);line-height:var(--lh-head);
+    text-transform:uppercase;letter-spacing:.01em;margin-bottom:10px}
+  .lead{color:var(--muted);font-size:clamp(16px,1.8vw,19px);max-width:60ch}
+  .lead b{color:var(--cream);font-weight:600}
+
+  /* reveal */
+  .rv{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+  .rv.in{opacity:1;transform:none}
+  .rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}.rv.d4{transition-delay:.32s}
+
+  /* HERO */
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--line)}
+  .hero .kicker{font-size:15px}
+  .bignum{font-family:'Anton';font-weight:400;font-size:clamp(96px,26vw,300px);line-height:.82;
+    color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text;
+    letter-spacing:-.01em}
+  .bignum .unit{font-size:.28em;-webkit-text-fill-color:var(--cream);color:var(--cream);margin-left:.1em}
+  .substats{display:flex;flex-wrap:wrap;gap:34px;margin-top:34px}
+  .substats .s .n{font-family:'Anton';font-size:clamp(26px,4vw,42px);line-height:1}
+  .substats .s .l{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.14em;margin-top:6px}
+  .scrollcue{margin-top:54px;color:var(--muted);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+    display:flex;align-items:center;gap:10px}
+  .scrollcue::before{content:"";width:34px;height:1px;background:var(--muted)}
+
+  /* charts */
+  .chart{width:100%;margin-top:34px}
+  .bar-row{display:flex;align-items:flex-end;gap:clamp(4px,1vw,12px);height:300px;margin-bottom:46px}
+  /* only .fill is in normal flow, so its % height is exact (labels are absolute,
+     otherwise flexbox shrinks tall bars and 704/799 collapse to the same height) */
+  .bar{flex:1;height:100%;position:relative;display:flex;flex-direction:column;justify-content:flex-end}
+  .bar .fill{position:relative;width:100%;border-radius:var(--r-sm) var(--r-sm) 0 0;height:0;
+    transition:height 1s cubic-bezier(.2,.8,.2,1);background:var(--grad);opacity:.42}
+  .bar.hot .fill{opacity:1;box-shadow:0 0 22px rgba(255,143,208,.35)}
+  .bar .v{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:7px;
+    font-family:'Anton';font-size:13px;opacity:0;transition:opacity .5s .4s;white-space:nowrap}
+  .bar .yr{position:absolute;top:100%;left:50%;transform:translateX(-50%) rotate(180deg);margin-top:9px;
+    color:var(--muted);font-size:11px;writing-mode:vertical-rl}
+  .bar:hover .fill{filter:brightness(1.15)}
+  .in .bar .v{opacity:.9}
+
+  .stack-row{display:flex;align-items:flex-end;gap:clamp(4px,1vw,12px);height:260px}
+  .stack{flex:1;display:flex;flex-direction:column-reverse;border-radius:var(--r-sm) var(--r-sm) 0 0;overflow:hidden;
+    height:0;transition:height 1s cubic-bezier(.2,.8,.2,1)}
+  .seg{width:100%}
+  .stack-lbl{display:flex;gap:clamp(4px,1vw,12px);margin-top:var(--sp-sm)}
+  .stack-lbl .yr{flex:1;text-align:center;color:var(--muted);font-size:11px}
+  .legend{display:flex;flex-wrap:wrap;gap:var(--sp-md);margin-top:18px;font-size:13px;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .dot{width:11px;height:11px;border-radius:var(--r-sm);display:inline-block}
+
+  .area-wrap{position:relative;margin-top:30px}
+  svg{display:block;width:100%;overflow:visible}
+  .area-path{opacity:0;transition:opacity 1.1s ease}
+  .in .area-path{opacity:1}
+  .line-path{stroke-dasharray:2600;stroke-dashoffset:2600;transition:stroke-dashoffset 1.6s ease}
+  .in .line-path{stroke-dashoffset:0}
+
+  /* records — v3 */
+  #rec-body{margin-top:22px}
+  .rec-hero{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r-xl);padding:24px 26px;
+    position:relative;overflow:hidden;display:flex;justify-content:space-between;align-items:flex-end;gap:var(--sp-md)}
+  .rec-hero::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--grad)}
+  .rec-hero .num{font-family:'Anton';font-size:clamp(40px,7vw,62px);line-height:.9;
+    color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text}
+  .rec-hero .num .u{font-size:.45em}
+  .rec-lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.13em;font-weight:600;
+    display:inline-flex;align-items:center;gap:6px}
+  .rec-lbl svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+  .rec-cap{color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;margin:18px 0 9px}
+  .rec-race{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-sm)}
+  .rtile{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--sp-md);min-width:0}
+  .rtile .t{font-family:'Anton';font-size:clamp(22px,3.4vw,28px);line-height:.9;margin-top:var(--sp-sm)}
+  .rtile .pace{color:var(--muted);font-size:11px;margin-top:4px}
+  .rtile .pred{display:flex;align-items:center;gap:6px;margin-top:11px;padding-top:10px;border-top:1px solid var(--line)}
+  .rtile .pred .pv{color:var(--cream);opacity:.55;font-size:12px}
+  .rtile .pred .d{margin-left:auto;font-size:11px;font-weight:700;
+    color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text}
+  .rtile .pred svg{width:13px;height:13px;stroke:var(--a2);fill:none;stroke-width:2}
+  .rec-sprint{display:flex;gap:var(--sp-sm);margin-top:var(--sp-sm)}
+  .rec-sprint .rtile{flex:1;display:flex;align-items:baseline;gap:10px;padding:12px 16px}
+  .rec-sprint .t{margin:0;font-size:21px}
+  .rec-sprint .pace{margin:0 0 0 auto}
+  .rec-goal{display:flex;align-items:center;gap:var(--sp-sm);margin-top:12px;padding:11px 16px;
+    border:1px dashed var(--line);border-radius:var(--r-md);color:var(--muted);font-size:12.5px}
+  .rec-goal svg{width:15px;height:15px;stroke:var(--a1);fill:none;stroke-width:2}
+  .rec-goal .m{font-family:'Anton';font-size:20px;margin-left:auto;
+    color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text}
+  .rec-sup{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:var(--sp-sm);margin-top:var(--sp-md)}
+  .rec-sup .t{font-family:'Anton';font-size:clamp(22px,3.4vw,27px);line-height:.9;margin-top:7px}
+  .rec-sup .t .u{font-size:.5em;opacity:.6}
+  .rec-sup .sub{font-size:12.5px;color:var(--cream);opacity:.6;margin-top:5px}
+  /* mobile: 3 race-PR tiles don't fit side-by-side at phone widths — stack them
+     (this was the source of the horizontal page overflow), and let the stat row breathe */
+  @media(max-width:560px){
+    .rec-race{grid-template-columns:1fr}
+    .rec-sup{grid-template-columns:1fr 1fr}
+  }
+
+  /* "gdzie" — one zoom-out stage; a prominent tab bar switches Wrocław/Polska/Świat */
+  .scene{margin-top:30px}
+  .scene-bar{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+    flex-wrap:wrap;margin-bottom:20px}
+  .tabwrap{display:flex;flex-direction:column;gap:9px;min-width:0}
+  .scene-hint{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--a1)}
+  .scene-hint .pts{font-size:14px}
+  /* the segmented control — each tab reads as a real button (bg+border), active = gradient */
+  .lvltabs{display:inline-flex;background:var(--ink);border:1px solid var(--line);
+    border-radius:var(--r-full);padding:5px;gap:5px;width:max-content;max-width:100%}
+  .lvltab{appearance:none;-webkit-appearance:none;cursor:pointer;border:1px solid var(--line);
+    background:rgba(255,255,255,.05);color:var(--cream);font-family:'Hanken Grotesk',sans-serif;
+    font-size:15px;font-weight:600;padding:11px 20px;border-radius:var(--r-full);display:flex;align-items:center;
+    gap:var(--sp-sm);white-space:nowrap;touch-action:manipulation;
+    transition:background .2s ease,color .2s ease,transform .12s ease,box-shadow .2s ease}
+  .lvltab .e{font-size:17px;line-height:1}
+  .lvltab:hover{background:rgba(255,255,255,.12)}
+  .lvltab:active{transform:scale(.95)}
+  .lvltab:focus-visible{outline:2px solid var(--a1);outline-offset:3px}
+  .lvltab.on{color:#1a0f0a;background:var(--grad);border-color:transparent;
+    box-shadow:0 6px 20px rgba(255,143,208,.4)}
+  .lvltab.on .e{filter:saturate(1.1)}
+  /* one-time pulse on reveal so it's obvious the bar is interactive */
+  @keyframes tabhint{0%,100%{box-shadow:0 0 0 0 rgba(127,209,255,0)}
+    50%{box-shadow:0 0 0 5px rgba(127,209,255,.22)}}
+  .scene.in .lvltabs{animation:tabhint 1.5s ease .3s 2}
+  .scope{display:flex;align-items:center;gap:11px;flex-shrink:0}
+  .bullseye{width:42px;height:42px;flex-shrink:0}
+  .bullseye .r{fill:none;stroke:var(--line);stroke-width:2.4;opacity:.5;transition:stroke .3s,opacity .3s}
+  .bullseye.l0 .r0,.bullseye.l1 .r1,.bullseye.l2 .r2{stroke:var(--a2);opacity:1}
+  .scope-stat{line-height:1.06;text-align:right}
+  .scope-stat b{font-family:'Anton';font-size:26px;display:block;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .scope-stat span{font-size:12px;color:var(--muted)}
+  /* the stage: one frame, levels cross-fade + scale (zoom feel), height animates */
+  .stage2{position:relative;transition:height .42s cubic-bezier(.2,.8,.2,1)}
+  .lvl{position:absolute;inset:0 0 auto 0;width:100%;opacity:0;visibility:hidden;transform:scale(1.05);
+    transition:opacity .4s ease,transform .42s cubic-bezier(.2,.8,.2,1)}
+  .lvl.on{opacity:1;visibility:visible;transform:none}
+  /* level 1 — Wrocław home card */
+  .homecard{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:26px 28px;position:relative;overflow:hidden}
+  .homecard::after{content:'';position:absolute;right:-50px;top:-50px;width:240px;height:240px;
+    background:radial-gradient(circle,rgba(127,209,255,.16),transparent 70%);pointer-events:none}
+  .homecard .hbig{font-family:'Anton';font-size:clamp(28px,4.6vw,44px);line-height:1.05;max-width:20ch}
+  /* level 2 — Poland pin map */
+  .plmap{position:relative;max-width:560px;margin:0 auto}
+  .plmap svg{width:100%;height:auto;display:block;overflow:visible}
+  .pl-outline{fill:rgba(255,255,255,.045);stroke:rgba(245,239,230,.5);stroke-width:2.2;stroke-linejoin:round}
+  .pin .halo{fill:rgba(255,143,208,.16)}
+  .pin .emo{dominant-baseline:central;text-anchor:middle}
+  .pin .leader{stroke:rgba(245,239,230,.32);stroke-width:1.2}
+  .pin .plbl{dominant-baseline:central;paint-order:stroke;stroke:var(--ink);stroke-width:4.5;
+    stroke-linejoin:round}
+  .pin .ln{font-family:'Hanken Grotesk',sans-serif;font-weight:600;font-size:26px;fill:var(--cream)}
+  .pin .lc{font-family:'Anton';font-size:26px;fill:var(--a1)}
+  .plhome{filter:drop-shadow(0 0 9px rgba(127,209,255,.75))}
+  /* level 3 — world chips */
+  .countries{justify-content:flex-start}
+  @media(prefers-reduced-motion:reduce){.stage2,.lvl{transition:none}.scene.in .lvltabs{animation:none}}
+  @media(max-width:560px){
+    .scene-bar{gap:14px}
+    .lvltabs{width:100%;justify-content:space-between}
+    .lvltab{flex:1;justify-content:center;padding:12px 6px;font-size:13px;gap:5px}
+    .lvltab .e{font-size:15px}
+    .scope{width:100%;justify-content:flex-start}
+  }
+
+  /* route-art map carousel */
+  .carousel{position:relative;margin-top:var(--sp-xl)}
+  .stage{position:relative}  /* wraps slides+controls so buttons centre on the MAP, not the dots */
+  /* slides are STACKED (absolute), not horizontally scrolled — a scroll
+     container desyncs Leaflet's route overlay from the tiles. */
+  .slides{position:relative;aspect-ratio:16/10;border:1px solid var(--line);
+    border-radius:var(--r-xl);overflow:hidden;background:#0c0c11;touch-action:pan-y}
+  .slides:focus-visible{outline:2px solid var(--a1);outline-offset:3px}
+  .slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .4s ease}
+  .slide.active{opacity:1;visibility:visible}
+  .slide .lmap{position:absolute;inset:0;background:#0c0c11}
+  .slide .lmap .leaflet-tile{filter:saturate(.6) brightness(.92)}
+  /* route lines drawn on the Leaflet overlay get a warm glow + draw animation */
+  .slide path.route{fill:none;stroke:#FF8FD0;stroke-linejoin:round;stroke-linecap:round;
+    filter:drop-shadow(0 0 3px rgba(255,143,208,.7))}
+  .slide path.route.draw{transition:stroke-dashoffset 1.6s ease;stroke-dashoffset:0!important}
+  .slide .cap{position:absolute;left:20px;bottom:16px;right:20px;z-index:500;pointer-events:none;
+    text-shadow:0 2px 14px #000,0 0 30px #000}
+  .slide .cap .t{font-family:'Anton';font-size:clamp(20px,3.4vw,30px);line-height:1}
+  .slide .cap .s{color:var(--cream);opacity:.85;font-size:14px;margin-top:3px}
+  .slide .grad{position:absolute;inset:0;z-index:400;pointer-events:none;
+    background:linear-gradient(0deg,rgba(8,8,12,.85),rgba(8,8,12,0) 45%)}
+  .leaflet-control-attribution{display:none}
+  /* nav arrows — high-contrast pills that lift off the dark map */
+  .cbtn{position:absolute;top:50%;transform:translateY(-50%);z-index:600;cursor:pointer;
+    width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+    border-radius:50%;border:1.5px solid rgba(255,255,255,.55);color:#fff;
+    background:rgba(10,10,16,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    box-shadow:0 6px 20px rgba(0,0,0,.55);touch-action:manipulation;
+    transition:background .2s ease,border-color .2s ease,transform .12s ease}
+  .cbtn svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.4;
+    stroke-linecap:round;stroke-linejoin:round}
+  .cbtn:hover{background:var(--a2);border-color:#fff}
+  .cbtn:active{transform:translateY(-50%) scale(.9)}
+  .cbtn:focus-visible{outline:2px solid var(--a1);outline-offset:3px}
+  .cbtn.prev{left:14px}.cbtn.next{right:14px}
+  /* position counter — "3 / 7" pill, top-right */
+  .counter{position:absolute;top:12px;right:12px;z-index:600;pointer-events:none;
+    font-family:'Hanken Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:.04em;
+    color:#fff;background:rgba(10,10,16,.66);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.28);border-radius:var(--r-full);padding:5px 12px;
+    box-shadow:0 4px 14px rgba(0,0,0,.5)}
+  .counter b{color:var(--a1)}
+  /* dot indicator — visible, with 44px-tall tap areas */
+  .dots{display:flex;gap:6px;justify-content:center;align-items:center;
+    margin-top:14px;flex-wrap:wrap}
+  .dots button{appearance:none;-webkit-appearance:none;border:0;background:transparent;
+    cursor:pointer;padding:12px 6px;line-height:0;touch-action:manipulation}
+  .dots button i{display:block;width:9px;height:9px;border-radius:50%;
+    background:rgba(245,239,230,.34);transition:all .3s ease}
+  .dots button:hover i{background:rgba(245,239,230,.65)}
+  .dots button.on i{background:var(--a2);width:26px;border-radius:var(--r-sm)}
+  .dots button:focus-visible{outline:2px solid var(--a1);outline-offset:2px;border-radius:var(--r-md)}
+  @media(max-width:560px){
+    .slides{aspect-ratio:1/1}        /* taller map on portrait phones */
+    .cbtn{width:44px;height:44px}
+    .cbtn.prev{left:10px}.cbtn.next{right:10px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .slide{transition:none}
+    .cbtn,.dots button i{transition:none}
+  }
+
+  /* country chips */
+  .countries{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+  .country{display:flex;align-items:center;gap:10px;background:var(--ink2);border:1px solid var(--line);
+    border-radius:var(--r-md);padding:12px 16px}
+  .country.foreign{border-color:rgba(127,209,255,.5);box-shadow:0 0 20px rgba(127,209,255,.12)}
+  .country .fl{font-size:24px}
+  .country .nm{font-weight:600}
+  .country .rn{font-family:'Anton';color:var(--muted);font-size:13px}
+
+  /* hour radar chart */
+  .hourchart{margin-top:var(--sp-lg);display:flex;justify-content:center}
+  .hourchart svg{width:100%;max-width:340px;height:auto;display:block}
+
+  /* scale / perspective boxes */
+  .scalebox{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r-xl);padding:28px;
+    position:relative;overflow:hidden}
+  .scalebox::after{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--grad)}
+  .scalebox .huge{font-family:'Anton';font-size:clamp(42px,7vw,76px);line-height:.88;margin:6px 0 4px;
+    color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text}
+  .scalebox .cmp{font-size:16px;color:var(--cream);line-height:1.4}
+  .scalebox .cmp b{color:var(--a1)}
+  .scalebox .rows{margin-top:18px;display:flex;flex-direction:column}
+  .scalebox .r{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);
+    border-top:1px solid var(--line);padding:7px 0}
+  .scalebox .r b{font-family:'Anton';color:var(--cream);font-weight:400}
+
+  /* generic mini bars (weekday / hours / distance) */
+  .bars{display:flex;align-items:flex-end;gap:5px;height:210px;margin-top:30px;margin-bottom:30px}
+  .bars .b{flex:1;height:100%;position:relative;display:flex;flex-direction:column;justify-content:flex-end}
+  /* only .f is in normal flow, so its % height resolves exactly; the labels are
+     absolute — otherwise flexbox shrinks every bar to the same residual height */
+  .bars .b .f{position:relative;width:100%;height:0;border-radius:var(--r-sm) var(--r-sm) 0 0;background:var(--grad);opacity:.48;
+    transition:height .9s cubic-bezier(.2,.8,.2,1)}
+  .bars .b.hot .f{opacity:1;box-shadow:0 0 18px rgba(255,143,208,.4)}
+  .bars .b .bv{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:6px;
+    font-family:'Anton';font-size:12px;opacity:0;transition:opacity .4s .4s;white-space:nowrap}
+  .in .bars .b .bv{opacity:.85}
+  .bars .b .bl{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:7px;
+    font-size:11px;color:var(--muted);white-space:nowrap}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+  @media(max-width:720px){.two{grid-template-columns:1fr;gap:30px}}
+  .subh{font-family:'Anton';font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--cream);margin-bottom:2px}
+
+  /* moon cards + zodiac */
+  .moons{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+  .moon{background:var(--ink2);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;text-align:center}
+  .moon.best{border-color:var(--a1);box-shadow:0 0 26px rgba(127,209,255,.18)}
+  .moon .ph{font-size:30px}.moon .nm{font-size:13px;color:var(--muted);margin:6px 0 10px}
+  .moon .pc{font-family:'Anton';font-size:26px}.moon .rn{font-size:12px;color:var(--muted)}
+  /* mobile: keep all 4 phases in one compact row and drop the card chrome
+     (the elevated box + border made them read as tappable buttons). Placed AFTER
+     the base .moon rules so these win at equal specificity; min-width:0 keeps the
+     four 1fr columns equal instead of long names blowing out their track. */
+  @media(max-width:640px){
+    .moons{grid-template-columns:repeat(4,1fr);gap:6px;margin-top:var(--sp-lg)}
+    .moon{background:transparent;border:0;border-radius:0;padding:6px 2px;box-shadow:none;min-width:0;overflow-wrap:anywhere}
+    .moon.best{background:transparent;border:0;box-shadow:none}
+    .moon.best .pc{color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text}
+    .moon .ph{font-size:26px}
+    .moon .nm{font-size:9.5px;margin:4px 0 6px;line-height:1.15}
+    .moon .pc{font-size:16px}
+    .moon .rn{font-size:9px;line-height:1.2}
+  }
+  .zod{margin-top:26px;display:flex;flex-direction:column;gap:9px}
+  .zrow{display:grid;grid-template-columns:150px 1fr 64px;align-items:center;gap:14px}
+  .zrow.king .zn{color:var(--a1)}
+  .zrow .zn{font-weight:600}.zrow .ztrack{height:12px;background:var(--ink2);border-radius:var(--r-sm);overflow:hidden}
+  .zrow .zf{height:100%;width:0;background:var(--grad);border-radius:var(--r-sm);transition:width 1s cubic-bezier(.2,.8,.2,1)}
+  .zrow .zp{font-family:'Anton';font-size:13px;text-align:right;color:var(--muted)}
+  .disclaim{color:var(--muted);font-size:13px;font-style:italic;margin-top:var(--sp-sm)}
+
+  /* educational annotation */
+  .edu{margin-top:26px;border-left:2px solid;border-image:var(--grad) 1;padding:8px 0 8px 18px;
+    color:var(--muted);font-size:14.5px;max-width:62ch}
+  .edu b{color:var(--a1);font-weight:600}
+
+  .outro h2{font-size:clamp(40px,9vw,110px);line-height:var(--lh-display)}
+  .outro .lead{font-size:clamp(17px,2.4vw,24px);margin-top:14px}
+  footer{padding:40px 0 70px;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+  a{color:var(--a1);text-decoration:none;border-bottom:1px solid rgba(127,209,255,.4)}
+  @media(max-width:640px){.bar .yr{font-size:9px}.reg{grid-template-columns:74px 1fr 44px}}
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div>
+<main>
+
+  <!-- HERO -->
+  <section class="hero" style="order:0">
+    <div class="kicker rv">Running Wrapped · Wrocław · wiosna 2026</div>
+    <div class="bignum rv d1"><span id="km">0</span><span class="unit">km</span></div>
+    <div class="substats">
+      <div class="s rv d2"><div class="n" id="runs">0</div><div class="l">biegów</div></div>
+      <div class="s rv d2"><div class="n" id="hours">0</div><div class="l">godzin w nogach</div></div>
+      <div class="s rv d3"><div class="n">21<span style="font-size:.5em"> km</span></div><div class="l">najdłuższy bieg</div></div>
+      <div class="s rv d3"><div class="n">89<span style="font-size:.5em"> dni</span></div><div class="l">od zera do półmaratonu</div></div>
+    </div>
+    <div class="scrollcue rv d4">przewiń — to historia jednej wiosny</div>
+  </section>
+
+  <!-- VOLUME BY YEAR — hidden: only one season (2026), a year-by-year chart says nothing -->
+  <section id="climb" style="order:1;display:none">
+    <div class="kicker rv">Rozdział 1 — wspinaczka</div>
+    <h2 class="rv">Rok po roku,<br>kilometr po kilometrze</h2>
+    <p class="lead rv d1">Zaczęło się w <b>2014</b> od <span data-km="2014">217</span> km. Dwanaście lat później rok <b>2026</b> ma już
+      <b><span data-km="2026">856</span> km</b> — i to dopiero <span id="c-when">koniec czerwca</span>. Pomiędzy: lata słabsze i mocniejsze, ale trend jest jeden.</p>
+    <div class="chart bar-row" id="yearBars"></div>
+    <div class="edu rv">📈 <b>Konsekwencja się kumuluje.</b> Nie chodzi o jeden genialny tydzień — sumę robią
+      lata powtarzalności. Skok 2024→2026 (<span data-km="2024">390</span> → <span data-km="2025">704</span> → <span data-km="2026">856</span> km) to efekt regularności, nie cudu.</div>
+  </section>
+
+  <!-- MONTHLY AREA -->
+  <section id="explosion" style="order:1">
+    <div class="kicker rv">Rozdział 1 — rozbieg</div>
+    <h2 class="rv">Cztery miesiące,<br>które zmieniły wszystko</h2>
+    <p class="lead rv d1">9 marca 2026 zrobiłaś pierwszy krok — <b>„Pierwsze koty za płoty"</b>, 2,7 km.
+      Każdy punkt to miesiąc. Z <b>13 km</b> w marcu urosło do <b>64 km</b> w maju,
+      Twojego najmocniejszego miesiąca. Jedna wiosna — kompletna przemiana.</p>
+    <div class="area-wrap rv"><svg id="monthArea" viewBox="0 0 1000 280" preserveAspectRatio="none"></svg></div>
+    <div class="edu rv">🌱 <b>Tak wygląda „od zera".</b> W styczniu i lutym Cię tu nie było — start to marzec.
+      A do czerwca ta krzywa ani razu nie wróciła do zera. To nie zryw, to nowy nawyk.</div>
+  </section>
+
+  <!-- ZONES -->
+  <section id="zones" style="order:6">
+    <div class="kicker rv">Rozdział 6 — serce</div>
+    <h2 class="rv">Serce na<br>maksa</h2>
+    <p class="lead rv d1">Rozkład czasu w strefach tętna. U większości początkujących królują strefy spokoju —
+      u Ciebie odwrotnie: <b>71% czasu w Z4 i Z5</b>, czyli mocno i bardzo mocno.
+      „Chyba lubię, jak mi serce rozrywa klatkę" — Twoje słowa, nie moje. ❤️‍🔥</p>
+    <div class="chart stack-row" id="zoneStack"></div>
+    <div class="stack-lbl" id="zoneYears"></div>
+    <div class="legend" id="zoneLegend"></div>
+    <div class="edu rv">💡 <b>Mała podpowiedź na dalej.</b> Ten ogień świetnie zbudował formę pod pierwszy sezon.
+      Jeśli kiedyś zechcesz biegać dłużej i lżej, kilka wolnych kilometrów w Z1/Z2 w tygodniu
+      da nogom oddech — ale charakter zostaw, jest Twój.</div>
+  </section>
+
+  <!-- PACE VS VOLUME — hidden: a year-over-year pace line needs multiple years -->
+  <section id="speed" style="order:8;display:none">
+    <div class="kicker rv">Rozdział 8 — tempo kontra wolumen</div>
+    <h2 class="rv">Szybciej nie znaczy więcej</h2>
+    <p class="lead rv d1">Linia to średnie tempo w danym roku, słupki w tle — wolumen.
+      Najszybszy byłeś w <b>2017 (5:45/km)</b> przy <span data-km="2017">238</span> km. Dziś biegasz <b><span id="p-mult">3</span>× więcej</b>,
+      wolniej średnio — bo większość to spokojne kilometry.</p>
+    <div class="area-wrap rv"><svg id="paceChart" viewBox="0 0 1000 300"></svg></div>
+    <div class="edu rv">🐢 <b>Wolne kilometry to nie strata.</b> Średnie tempo spada, gdy świadomie
+      biegasz łatwo — a to ono buduje wytrzymałość pod te szybkie dni.</div>
+  </section>
+
+  <!-- WHERE -->
+  <section id="where" style="order:3">
+    <div class="kicker rv">Rozdział 3 — gdzie</div>
+    <h2 class="rv">Twoje podwórko<br>to Wrocław</h2>
+    <p class="lead rv d1"><b>Wrocław</b> to Twój dom — tu startuje większość biegów. Ale kilka
+      tras złapałaś też poza miastem: w <b>Głogowie</b> i okolicy. Przełącz widok i zobacz.</p>
+
+    <div class="scene rv d1">
+      <div class="scene-bar">
+        <div class="tabwrap">
+          <span class="scene-hint"><span class="pts">↔</span> oddalaj kamerę</span>
+          <div class="lvltabs" role="tablist" aria-label="Poziom mapy — skala widoku" tabindex="0">
+            <button class="lvltab on" data-lvl="0" role="tab" aria-selected="true"><span class="e">🏠</span><span id="tab-home">Dom</span></button>
+            <button class="lvltab" data-lvl="1" role="tab" aria-selected="false"><span class="e" id="tab-flag">🇵🇱</span><span id="tab-country">Polska</span></button>
+            <button class="lvltab" data-lvl="2" role="tab" aria-selected="false" style="display:none"><span class="e">🌍</span>Świat</button>
+          </div>
+        </div>
+        <div class="scope">
+          <svg class="bullseye l0" viewBox="0 0 44 44" aria-hidden="true">
+            <circle class="r r2" cx="22" cy="22" r="20"/>
+            <circle class="r r1" cx="22" cy="22" r="13"/>
+            <circle class="r r0" cx="22" cy="22" r="6"/>
+          </svg>
+          <div class="scope-stat"><b id="sceneStat">—</b><span id="sceneSub"></span></div>
+        </div>
+      </div>
+      <div class="stage2" id="sceneStage">
+        <div class="lvl on" data-lvl="0" role="tabpanel"><div class="homecard" id="homeCard"></div></div>
+        <div class="lvl" data-lvl="1" role="tabpanel"><div class="plmap" id="plMap"></div></div>
+        <div class="lvl" data-lvl="2" role="tabpanel" style="display:none"><div class="countries" id="countries"></div></div>
+      </div>
+    </div>
+
+    <p class="lead rv" style="margin-top:48px">A teraz zejdźmy na poziom ulicy — każda z tych tras
+      narysowana Twoim własnym GPS-em.</p>
+    <div class="carousel">
+      <div class="stage">
+        <div class="slides" id="mapSlides" tabindex="0" role="group"
+             aria-roledescription="karuzela map" aria-label="Mapy Twoich tras — strzałki ← → przełączają"></div>
+        <button class="cbtn prev" id="mapPrev" type="button" aria-label="Poprzednia mapa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button class="cbtn next" id="mapNext" type="button" aria-label="Następna mapa">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <div class="counter" id="mapCounter" aria-hidden="true"></div>
+      </div>
+      <div class="dots" id="mapDots" role="tablist" aria-label="Wybór mapy"></div>
+    </div>
+  </section>
+
+  <!-- SCALE -->
+  <section id="scale" style="order:5">
+    <div class="kicker rv">Rozdział 5 — w skali</div>
+    <h2 class="rv">Co to właściwie<br>znaczy?</h2>
+    <p class="lead rv d1">159 km w nogach i 3&nbsp;376 metrów w górę. Liczby jak liczby — dopóki
+      nie zestawisz ich z czymś namacalnym. 🧭</p>
+    <div class="two" style="margin-top:36px">
+      <div class="scalebox rv d1" id="scaleElev"></div>
+      <div class="scalebox rv d2" id="scaleDist"></div>
+    </div>
+  </section>
+
+  <!-- WHEN -->
+  <section id="when" style="order:4">
+    <div class="kicker rv">Rozdział 4 — kiedy</div>
+    <h2 class="rv">Nigdy o świcie</h2>
+    <p class="lead rv d1">Godzina startu, czas lokalny. Zero porannych zrywów — pierwszy bieg dnia
+      łapiesz najczęściej koło <b>11:00</b>, a resztę rozrzucasz na popołudnia, wieczory,
+      a czasem i <b>noc</b> („Nocne bieganie" nie wzięło się znikąd). Dzień? <b>Sobota</b> rządzi.</p>
+    <div class="two">
+      <div class="rv d1"><div class="subh">Pora dnia (radar 24h — długość = liczba biegów)</div>
+        <div class="hourchart" id="hourChart"></div></div>
+      <div class="rv d2"><div class="subh">Dzień tygodnia</div>
+        <div class="bars" id="wdBars"></div></div>
+    </div>
+    <div class="edu rv">🌙 <b>Biegasz po swojemu.</b> 65% biegów pada w weekend, a sama sobota to
+      12 wyjść i 78 km. Żadnego „muszę o 5 rano" — ruszasz wtedy, kiedy Ci pasuje. I działa.</div>
+  </section>
+
+  <!-- DISTANCE -->
+  <section id="dist" style="order:2">
+    <div class="kicker rv">Rozdział 2 — dystans</div>
+    <h2 class="rv">Od dwóch kilometrów<br>do dwudziestu jeden</h2>
+    <p class="lead rv d1">Rozkład długości wszystkich 31 biegów. Większość to krótkie, uczciwe wypady —
+      <b>19 biegów poniżej 5 km</b>, dokładnie tak, jak się zaczyna. Ale ogon sięga aż po
+      <b>21,6 km</b>: półmaraton z 6 czerwca.</p>
+    <div class="bars" id="distBars"></div>
+    <div class="edu rv">📏 <b>Każdy kilometr się liczy.</b> Te „małe" 2–3 km z marca zbudowały nogi,
+      które w czerwcu uniosły Cię przez 21 km. Nikt nie zaczyna od półmaratonu.</div>
+  </section>
+
+  <!-- RECORDS -->
+  <section id="records" style="order:7">
+    <div class="kicker rv">Rozdział 7 — rekordy</div>
+    <h2 class="rv">Tablica chwały</h2>
+    <p class="lead rv d1">6 czerwca, 21,6 km, tytuł biegu: <b>„O ja jebie"</b>. Chyba nie trzeba dodawać nic więcej. 🏅</p>
+    <div id="rec-body" class="rv"></div>
+  </section>
+
+  <!-- FUN -->
+  <section id="fun" style="order:8">
+    <div class="kicker rv">Rozdział 8 — z przymrużeniem oka</div>
+    <h2 class="rv">Astrologia biegacza</h2>
+    <p class="lead rv d1">Czas na kompletnie nienaukowe wnioski. Bo czemu nie. 🔮</p>
+
+    <div class="rv d1" style="margin-top:36px"><div class="subh">🌙 Bieganie a fazy Księżyca</div></div>
+    <div class="moons" id="moons"></div>
+    <p class="disclaim rv">Tak, policzyliśmy fazę Księżyca dla każdego biegu. Nie, NASA tego nie zatwierdza.</p>
+
+    <div class="rv d1" style="margin-top:46px"><div class="subh">♈ W którym znaku jesteś najmocniejszy</div></div>
+    <div class="zod" id="zodiac"></div>
+    <p class="disclaim rv">Dłuższy słupek = szybsze średnie tempo w dniu biegu (👑 = najszybszy znak).
+      Korelacja ≠ przyczyna — gwiazdy nie biegają za Ciebie.</p>
+  </section>
+
+  <!-- OUTRO -->
+  <section class="outro" style="order:9">
+    <div class="kicker rv">…a to dopiero początek</div>
+    <h2 class="rv">Od „pierwszych kotów"<br>do „o ja jebie".</h2>
+    <p class="lead rv d1">Jedna wiosna. 31 biegów, 159 km, półmaraton w nogach — i forma na trzydziestkę,
+      którą zrobiłaś sobie sama. Bo o to chodziło: udowodnić sobie, że możesz. A dalej?
+      5–10 km dla siebie, po swojemu. To Twoja misja zmiany siebie — i właśnie się udaje. 🩵</p>
+  </section>
+
+  <footer class="rv" style="order:10">Running Wrapped · dane ze Strava · Wrocław 2026</footer>
+</main>
+
+<script>
+const DATA = {"lifetime":{"runs":31,"km":159,"hours":24,"years":1,"first":"2026-03-09","last":"2026-06-23","cities":8,"earth_pct":0.4},"geo":{"home_city":"Wrocław","country":"Polska","country_flag":"🇵🇱"},"years":[{"year":2026,"runs":31,"km":159.5,"hours":24.2,"pace_s":547.2,"pace":"9:07","avg_hr":172,"longest":21.6,"active_days":28}],"months":[{"ym":"2026-03","km":12.7,"runs":5},{"ym":"2026-04","km":38.4,"runs":7},{"ym":"2026-05","km":63.7,"runs":13},{"ym":"2026-06","km":44.7,"runs":6}],"zones_by_year":[{"year":2026,"Z1":0.8,"Z2":1.9,"Z3":4.2,"Z4":9.3,"Z5":8.0,"pct":{"Z1":3,"Z2":8,"Z3":17,"Z4":38,"Z5":33}}],"zone_bounds":[137,152,166,181],"records":{"longest":{"km":21.6,"date":"2026-06-06","name":"O ja jebie"},"race":[{"key":"5k","label":"5 km","time":"44:35","pace":"8:37","pred":null},{"key":"10k","label":"10 km","time":"82:41","pace":"8:03","pred":null}],"sprint":[],"marathon":null,"totals":{"km":159,"runs":31},"peak_week":{"week":"2026-W23","km":30.1},"fastest_year":{"year":2026,"pace":"9:07"}},"regions":[{"name":"Nie","runs":2},{"name":"Pierwsze","runs":1},{"name":"Puls","runs":1},{"name":"W","runs":1},{"name":"Dzisiaj","runs":1},{"name":"Strava","runs":1},{"name":"Odkryłam,","runs":1},{"name":"Samsung","runs":1}],"poland":{"w":1000,"h":942,"outline":"M899.5,529.7 L904.2,539.5 L906.1,547.2 L904.1,553.3 L904.7,559.3 L909.0,565.7 L922.4,585.6 L929.1,604.6 L933.3,612.1 L943.1,621.7 L944.0,625.7 L940.1,629.3 L936.9,629.8 L934.3,630.8 L932.7,634.2 L935.2,637.8 L938.7,643.1 L943.0,658.2 L942.6,670.6 L939.3,673.7 L935.0,681.0 L932.2,687.7 L908.9,692.4 L903.3,699.6 L890.6,713.4 L881.9,721.4 L869.1,735.8 L848.8,760.6 L841.3,771.0 L835.9,779.6 L819.4,802.4 L814.4,812.0 L815.4,819.9 L820.7,838.4 L821.8,846.8 L820.8,854.5 L819.1,861.4 L819.4,864.5 L824.2,869.5 L832.0,877.3 L832.4,879.9 L831.3,883.3 L828.7,885.9 L819.0,883.2 L808.2,877.9 L804.5,878.5 L798.7,877.3 L774.6,867.0 L758.4,859.0 L756.8,853.8 L753.7,846.2 L746.8,839.9 L731.0,834.4 L724.5,830.1 L698.8,827.7 L687.6,827.6 L679.7,829.4 L674.6,829.2 L667.7,840.4 L662.9,843.7 L655.9,844.0 L649.7,842.0 L643.5,836.1 L633.4,833.0 L626.2,834.5 L620.8,833.2 L616.2,832.9 L614.6,834.1 L610.9,833.9 L605.5,836.7 L599.6,840.7 L593.1,843.8 L588.2,850.3 L583.7,863.0 L571.1,857.3 L566.9,859.8 L561.0,861.5 L556.9,859.7 L557.9,855.3 L559.7,850.4 L559.6,843.4 L558.5,835.8 L554.5,833.3 L548.7,832.4 L545.7,830.9 L545.3,828.4 L542.4,825.1 L537.2,816.9 L532.3,806.7 L528.9,803.6 L523.9,808.5 L516.5,814.0 L511.8,815.9 L502.9,831.8 L486.8,832.4 L485.8,824.9 L484.1,817.8 L474.6,816.0 L474.4,811.8 L472.4,801.3 L453.5,780.8 L451.2,772.2 L451.9,768.9 L450.6,763.4 L446.5,760.2 L431.6,756.2 L427.7,758.5 L424.3,756.2 L418.8,751.3 L409.4,747.3 L408.4,745.2 L405.0,741.7 L403.1,741.2 L401.9,743.3 L399.1,746.4 L389.4,750.2 L385.5,748.6 L382.0,745.3 L378.0,738.1 L372.2,731.9 L367.4,729.6 L364.6,726.3 L364.0,723.8 L374.7,718.6 L377.0,713.3 L375.7,703.6 L374.1,702.4 L369.8,705.7 L360.9,708.6 L352.7,709.9 L348.5,709.9 L325.1,692.3 L309.9,686.9 L300.9,685.3 L299.9,687.1 L304.0,697.0 L311.0,709.2 L310.6,712.4 L302.2,717.4 L297.5,719.6 L291.9,723.8 L287.1,729.7 L283.0,732.3 L279.4,731.7 L275.7,728.8 L266.0,710.8 L253.8,697.0 L252.3,693.9 L248.5,693.2 L243.1,690.0 L241.3,685.8 L244.0,681.4 L247.7,677.3 L254.3,674.8 L256.3,672.5 L257.5,669.0 L259.9,664.4 L259.3,662.8 L254.6,657.6 L247.7,652.7 L228.5,656.4 L223.2,659.0 L220.2,655.6 L218.0,650.6 L213.1,649.7 L206.5,645.1 L198.6,640.7 L190.9,639.4 L174.9,633.0 L168.7,632.6 L165.1,630.4 L161.4,625.6 L158.2,620.3 L156.6,609.5 L144.8,604.6 L133.0,601.5 L132.2,603.1 L132.7,613.9 L132.0,619.7 L124.3,623.3 L116.6,623.7 L117.0,621.9 L126.2,602.3 L130.3,590.0 L135.0,567.5 L129.4,549.8 L127.8,541.5 L125.2,537.5 L109.1,528.8 L107.8,525.8 L110.3,514.1 L109.1,509.2 L105.2,504.0 L100.1,493.6 L98.1,484.8 L104.6,474.5 L106.2,466.9 L109.1,456.5 L111.1,450.8 L111.5,449.2 L107.3,445.2 L106.2,439.5 L107.3,431.3 L105.1,425.2 L99.3,421.3 L95.6,416.1 L93.9,409.6 L95.3,399.4 L99.7,385.5 L90.3,368.8 L67.1,349.3 L56.0,335.6 L56.9,327.8 L61.8,320.8 L70.6,314.4 L77.4,303.2 L81.1,289.8 L81.2,287.3 L81.4,277.8 L71.1,238.9 L69.5,229.1 L68.2,217.4 L67.6,214.1 L88.0,222.4 L96.5,227.0 L95.4,221.8 L93.7,217.3 L94.8,210.7 L94.3,200.8 L75.8,195.7 L63.6,194.0 L62.2,187.1 L63.4,182.7 L66.7,185.3 L78.7,186.3 L108.3,173.0 L159.2,155.6 L213.7,139.3 L226.4,137.6 L239.1,134.2 L243.9,128.1 L248.6,124.0 L256.0,113.3 L272.4,96.6 L301.4,90.5 L312.2,82.6 L334.9,71.5 L386.6,59.1 L408.2,56.3 L429.4,56.0 L448.2,65.8 L468.1,77.9 L471.7,85.2 L460.9,80.7 L445.2,69.8 L439.4,69.3 L452.8,102.4 L460.2,114.1 L475.0,122.9 L487.5,125.8 L525.8,120.5 L539.4,113.6 L543.4,110.1 L546.9,111.8 L571.8,113.7 L597.1,115.6 L637.7,117.6 L680.1,119.7 L724.0,121.9 L771.6,124.2 L821.7,125.6 L824.8,124.7 L829.9,119.1 L836.1,119.9 L843.5,123.3 L847.0,125.9 L848.4,128.8 L849.3,132.2 L853.4,132.9 L860.7,135.4 L870.7,141.3 L878.5,147.0 L886.0,155.1 L888.4,164.3 L888.6,174.7 L888.1,181.4 L888.7,184.2 L898.9,232.8 L915.8,279.6 L922.1,302.2 L924.5,314.3 L926.5,331.8 L927.1,344.1 L927.1,351.0 L925.8,360.5 L920.8,366.1 L888.3,382.2 L882.2,387.3 L872.6,399.8 L863.7,412.7 L861.7,417.1 L861.2,420.0 L863.1,424.2 L874.7,431.2 L886.4,436.7 L890.2,440.9 L898.8,446.2 L901.9,451.0 L903.7,455.1 L903.5,464.8 L899.6,478.1 L901.3,488.1 L897.3,494.8 L894.1,502.2 L893.6,515.3 L899.5,529.7Z","home":{"count":26,"x":312.1,"y":587.8},"places":[{"name":"Głogów","names":["Głogów"],"count":1,"x":229.3,"y":509.3},{"name":"Tarnowskie Góry","names":["Tarnowskie Góry"],"count":1,"x":475.3,"y":686.8},{"name":"Sława","names":["Sława"],"count":1,"x":227.2,"y":477.8}],"other_runs":3},"weekday":[{"d":"Pon","runs":3,"km":13},{"d":"Wt","runs":4,"km":16},{"d":"Śr","runs":0,"km":0},{"d":"Czw","runs":1,"km":8},{"d":"Pt","runs":3,"km":9},{"d":"Sob","runs":12,"km":78},{"d":"Nie","runs":8,"km":35}],"hours":[{"h":0,"runs":0},{"h":1,"runs":0},{"h":2,"runs":0},{"h":3,"runs":0},{"h":4,"runs":0},{"h":5,"runs":0},{"h":6,"runs":0},{"h":7,"runs":0},{"h":8,"runs":0},{"h":9,"runs":0},{"h":10,"runs":4},{"h":11,"runs":5},{"h":12,"runs":1},{"h":13,"runs":3},{"h":14,"runs":0},{"h":15,"runs":1},{"h":16,"runs":4},{"h":17,"runs":3},{"h":18,"runs":2},{"h":19,"runs":2},{"h":20,"runs":1},{"h":21,"runs":3},{"h":22,"runs":1},{"h":23,"runs":1}],"dist_hist":[{"label":"<3","runs":10},{"label":"3–5","runs":9},{"label":"5–7","runs":6},{"label":"7–10","runs":3},{"label":"10–15","runs":2},{"label":"15+","runs":1}],"moon":[{"phase":"🌑 Nów","runs":5,"pace":"8:31","pace_s":511.32827766157806},{"phase":"🌓 Przybywający","runs":7,"pace":"9:35","pace_s":574.7709278357103},{"phase":"🌕 Pełnia","runs":8,"pace":"9:14","pace_s":553.8081318296651},{"phase":"🌗 Ubywający","runs":11,"pace":"9:20","pace_s":560.277550960364}],"fav_moon":"🌗 Ubywający","zodiac":[{"sign":"♉ Byk","runs":12,"km":66,"pace":"9:36","pace_s":576.3150050319413},{"sign":"♊ Bliźnięta","runs":9,"km":57,"pace":"8:36","pace_s":516.4223333198537},{"sign":"♈ Baran","runs":5,"km":21,"pace":"9:48","pace_s":587.5931115247861},{"sign":"♓ Ryby","runs":4,"km":11,"pace":"8:59","pace_s":538.6753290672654},{"sign":"♋ Rak","runs":1,"km":5,"pace":"8:37","pace_s":517.3080642042158}],"strongest_sign":"♊ Bliźnięta","maps":[{"id":"home","title":"Wrocław — Twój teren","subtitle":"26 biegów w sercu miasta","tracks":[[[51.11086,17.00678],[51.11086,17.00715],[51.11077,17.00768],[51.11069,17.00811],[51.11062,17.0086],[51.11053,17.00913],[51.11042,17.00968],[51.11032,17.01022],[51.11021,17.01081],[51.11013,17.0113],[51.11002,17.01186],[51.10996,17.01233],[51.10992,17.01281],[51.1098,17.0132],[51.1097,17.01382],[51.10963,17.01446],[51.10953,17.01502],[51.10936,17.01552],[51.10926,17.01615],[51.10918,17.01674],[51.10906,17.01721],[51.10898,17.01772],[51.10887,17.0182],[51.1088,17.0187],[51.10875,17.01927],[51.10873,17.01976],[51.10852,17.02028],[51.10833,17.02085],[51.1084,17.02134],[51.10873,17.0216],[51.10906,17.02171],[51.10938,17.02182],[51.10968,17.0218],[51.11002,17.02173],[51.11035,17.02166],[51.11075,17.02153],[51.11111,17.02137],[51.11137,17.02106],[51.11166,17.02069],[51.11183,17.02016],[51.11192,17.01956],[51.11202,17.01906],[51.11216,17.01857],[51.11232,17.01805],[51.11238,17.01742],[51.11248,17.01682],[51.11253,17.0162],[51.11255,17.01554],[51.11259,17.01498],[51.11261,17.01435],[51.11258,17.01374],[51.11262,17.01324],[51.11265,17.01274],[51.11261,17.01221],[51.1126,17.01166],[51.11262,17.01105],[51.11264,17.01039],[51.11266,17.00974],[51.11269,17.00913],[51.1127,17.00847],[51.11271,17.00793],[51.11269,17.00741],[51.11278,17.0069],[51.11286,17.00643],[51.11297,17.00574],[51.11327,17.00537],[51.11351,17.0049],[51.11376,17.0044],[51.11398,17.00384],[51.1142,17.00329],[51.11441,17.00286],[51.11463,17.0025],[51.11487,17.00221],[51.1151,17.00186],[51.11532,17.00138],[51.11559,17.00097],[51.11592,17.0006],[51.11621,17.0002],[51.11647,16.99991],[51.11613,16.99966],[51.11583,16.99947],[51.11557,16.99918],[51.11528,16.999],[51.11497,16.99881],[51.11461,16.99865],[51.11423,16.99849],[51.11383,16.9984],[51.11359,16.99824],[51.1133,16.99799],[51.11294,16.99789],[51.11263,16.99773],[51.11263,16.99728],[51.11271,16.99679],[51.1128,16.99631],[51.1129,16.99573],[51.11299,16.99511],[51.11283,16.99458],[51.11255,16.99431],[51.11239,16.99385],[51.11219,16.99346],[51.11198,16.9938],[51.1118,16.99411],[51.11189,16.99386],[51.11212,16.99355],[51.11239,16.99369],[51.11254,16.99431],[51.1127,16.99488],[51.11262,16.99548],[51.11253,16.99609],[51.11246,16.99673],[51.1124,16.99729],[51.11229,16.99769],[51.11219,16.99816],[51.11211,16.99868],[51.11198,16.99928],[51.11185,16.99994],[51.11173,17.00059],[51.1116,17.00117],[51.11147,17.0018],[51.11136,17.00241],[51.11129,17.00295],[51.1112,17.00344],[51.11108,17.00389],[51.11096,17.00438],[51.1108,17.00497],[51.11065,17.0056],[51.11038,17.00579]],[[51.11087,17.00678],[51.11092,17.00719],[51.11081,17.00768],[51.11071,17.00814],[51.1106,17.0086],[51.11052,17.00909],[51.11043,17.00968],[51.11031,17.01032],[51.11019,17.01097],[51.11008,17.01162],[51.10995,17.01227],[51.10988,17.01286],[51.10978,17.01334],[51.10973,17.01388],[51.10963,17.01442],[51.10952,17.01497],[51.10936,17.01562],[51.10925,17.01629],[51.10911,17.01711],[51.10894,17.0178],[51.10882,17.01852],[51.10876,17.01928],[51.10863,17.01995],[51.10842,17.02055],[51.10835,17.02108],[51.10849,17.02147],[51.10889,17.0217],[51.10934,17.02187],[51.10976,17.02177],[51.11018,17.02171],[51.11059,17.02162],[51.11097,17.02148],[51.11124,17.02121],[51.1115,17.0209],[51.11169,17.02048],[51.11185,17.01992],[51.112,17.01926],[51.11214,17.01855],[51.11232,17.01777],[51.11245,17.01704],[51.11249,17.01629],[51.11254,17.01555],[51.11256,17.01498],[51.1126,17.01444],[51.11259,17.0139],[51.11258,17.01328],[51.11262,17.01251],[51.11258,17.01179],[51.11259,17.01106],[51.11262,17.01035],[51.11262,17.00962],[51.11267,17.00891],[51.11265,17.0083],[51.11264,17.00756],[51.11279,17.00679],[51.11287,17.00637],[51.11296,17.00558],[51.11335,17.00521],[51.11363,17.00459],[51.11388,17.00399],[51.11414,17.00339],[51.11442,17.0028],[51.11477,17.00236],[51.11502,17.00197],[51.11525,17.00158],[51.11552,17.00109],[51.11592,17.00062],[51.11629,17.00015],[51.11636,16.99977],[51.11597,16.9995],[51.11558,16.99923],[51.11516,16.99894],[51.11478,16.99873],[51.11448,16.99858],[51.11414,16.99847],[51.11372,16.99838],[51.11351,16.99803],[51.11305,16.99792],[51.11259,16.99783],[51.11264,16.99721],[51.11276,16.99652],[51.11288,16.99593],[51.11292,16.99539],[51.11304,16.99489],[51.11285,16.99454],[51.11297,16.99392],[51.11311,16.99322],[51.11323,16.99254],[51.11334,16.99188],[51.11349,16.99122],[51.11356,16.99054],[51.11361,16.98994],[51.11354,16.98942],[51.11353,16.98893],[51.11371,16.98853],[51.11377,16.98788],[51.11373,16.98718],[51.11379,16.98744],[51.11381,16.98809],[51.11364,16.98877],[51.11356,16.98937],[51.11358,16.99],[51.11354,16.99054],[51.11346,16.99106],[51.11339,16.99159],[51.11328,16.99225],[51.1131,16.99299],[51.113,16.99379],[51.11285,16.99447],[51.11272,16.99501],[51.11259,16.99574],[51.1125,16.99632],[51.11244,16.99684],[51.11239,16.99738],[51.11227,16.99784],[51.11213,16.99851],[51.11195,16.99932],[51.1118,17.00015],[51.11158,17.00101],[51.11148,17.00187],[51.11136,17.00265]],[[51.11052,17.00702],[51.11079,17.00681],[51.11092,17.00711],[51.11086,17.00771],[51.11074,17.00831],[51.11062,17.00891],[51.1105,17.00952],[51.11041,17.01002],[51.11033,17.0105],[51.11024,17.01098],[51.11014,17.01152],[51.11004,17.01219],[51.10994,17.01287],[51.10983,17.01347],[51.10972,17.01414],[51.1096,17.01477],[51.10945,17.01536],[51.10935,17.01588],[51.10926,17.0164],[51.10917,17.01703],[51.109,17.01761],[51.1089,17.01821],[51.1088,17.01893],[51.10883,17.01964],[51.10854,17.02014],[51.10839,17.02079],[51.10847,17.02133],[51.10867,17.02155],[51.10898,17.02167],[51.10932,17.02181],[51.10966,17.02186],[51.11011,17.02181],[51.11053,17.0217],[51.11096,17.02165],[51.11115,17.02147],[51.11138,17.02097],[51.11173,17.02044],[51.11194,17.01969],[51.1121,17.01866],[51.11237,17.01757],[51.1125,17.01673],[51.11251,17.01599],[51.11258,17.01519],[51.11261,17.01442],[51.11259,17.01369],[51.11261,17.01297],[51.11259,17.01223],[51.11259,17.01169],[51.11262,17.01116],[51.11264,17.01065],[51.11263,17.01004],[51.11266,17.00927],[51.11268,17.00851],[51.11268,17.00773],[51.11275,17.00702],[51.11292,17.00614],[51.11309,17.00536],[51.11339,17.00503],[51.11362,17.00466],[51.1138,17.00423],[51.11401,17.00371],[51.11431,17.00306],[51.11451,17.00241],[51.11454,17.00173],[51.11464,17.00096],[51.11482,17.00056],[51.11369,16.99863],[51.11277,16.99661],[51.1129,16.99589],[51.11266,16.99587],[51.11248,16.99652],[51.11241,16.99724],[51.11233,16.99777],[51.11196,16.99939],[51.11126,17.00332],[51.11114,17.00378],[51.11101,17.00426],[51.11087,17.00477],[51.11074,17.00526],[51.11063,17.00576],[51.11031,17.00574],[51.11014,17.00558],[51.11015,17.00558]],[[51.13962,16.93958],[51.13921,16.93964],[51.13884,16.93975],[51.13847,16.94],[51.13813,16.94024],[51.13777,16.9406],[51.13751,16.941],[51.13746,16.94159],[51.13746,16.94212],[51.13761,16.94256],[51.13789,16.94284],[51.13808,16.9433],[51.1381,16.94387],[51.13804,16.94445],[51.13796,16.94502],[51.13785,16.94557],[51.13771,16.9461],[51.1376,16.94659],[51.13749,16.94704],[51.13732,16.94749],[51.13715,16.94794],[51.13697,16.94843],[51.13678,16.94891],[51.13659,16.9494],[51.1364,16.94991],[51.13623,16.95038],[51.13605,16.95087],[51.13585,16.95133],[51.13568,16.95178],[51.13552,16.95216],[51.1353,16.95256],[51.13505,16.95294],[51.13479,16.95336],[51.1345,16.95379],[51.13421,16.95423],[51.13396,16.95466],[51.1337,16.9551],[51.13347,16.95547],[51.13325,16.95583],[51.13304,16.95622],[51.13285,16.95666],[51.13267,16.95721],[51.13252,16.95777],[51.13241,16.95837],[51.13229,16.95896],[51.13217,16.95948],[51.13207,16.95997],[51.13197,16.96046],[51.13188,16.96096],[51.13178,16.9614],[51.13168,16.96188],[51.13155,16.9624],[51.13143,16.96294],[51.13134,16.96349],[51.13122,16.96403],[51.13113,16.96459],[51.131,16.96512],[51.13089,16.96561],[51.13078,16.96611],[51.13068,16.96663],[51.13057,16.96715],[51.13043,16.96771],[51.1303,16.96828],[51.13015,16.96884],[51.12997,16.96941],[51.12981,16.96995],[51.12964,16.97046],[51.12948,16.97093],[51.12934,16.97144],[51.1292,16.97189],[51.12906,16.97238],[51.12889,16.97294],[51.12873,16.97351],[51.12854,16.97407],[51.12836,16.97463],[51.1282,16.97518],[51.12803,16.97574],[51.12788,16.97622],[51.12774,16.9767],[51.1276,16.97717],[51.12745,16.97766],[51.12724,16.97821],[51.12703,16.97874],[51.12682,16.97931],[51.12662,16.97989],[51.12641,16.98044],[51.12622,16.98093],[51.12605,16.98137],[51.12587,16.98183],[51.12569,16.98227],[51.12547,16.98274],[51.12523,16.98326],[51.125,16.98381],[51.12481,16.9844],[51.12463,16.985],[51.12447,16.98558],[51.12427,16.98609],[51.1241,16.98652],[51.12391,16.98697],[51.12373,16.98743],[51.12354,16.98792],[51.12331,16.98849],[51.12307,16.98904],[51.12285,16.98958],[51.12265,16.99009],[51.12244,16.99059],[51.12223,16.9911],[51.12207,16.99151],[51.12189,16.99195],[51.1217,16.99241],[51.12151,16.99289],[51.12128,16.99345],[51.12104,16.99402],[51.12078,16.99459],[51.1205,16.99512],[51.12022,16.99565],[51.11996,16.99613],[51.11972,16.99653],[51.11947,16.99687],[51.11922,16.99723],[51.11895,16.99761],[51.11863,16.99798],[51.11827,16.99838],[51.11795,16.99876],[51.1176,16.99905],[51.11725,16.99937],[51.11689,16.99971],[51.11659,17.00008],[51.11631,17.0004],[51.11604,17.0007],[51.11576,17.00105],[51.11546,17.00148],[51.11518,17.00196],[51.11488,17.00242],[51.11459,17.0029],[51.11429,17.00339],[51.11405,17.00384],[51.11386,17.00429],[51.11367,17.00474],[51.1135,17.00519],[51.11328,17.00564],[51.11305,17.0062],[51.11288,17.00679],[51.11282,17.00745],[51.11279,17.0081],[51.11275,17.00872],[51.11275,17.00927],[51.11274,17.00978],[51.11273,17.0103],[51.1127,17.01081],[51.11269,17.01138],[51.11266,17.01206],[51.11266,17.01271],[51.11266,17.01339],[51.11266,17.01404],[51.11263,17.01466],[51.11262,17.01522],[51.1126,17.01574],[51.11257,17.01625],[51.11253,17.01676],[51.11248,17.01731],[51.11243,17.01792],[51.11229,17.01856],[51.11215,17.01916],[51.11201,17.01976],[51.11187,17.02035],[51.11172,17.02089],[51.11159,17.02139],[51.11148,17.0219],[51.11132,17.02239],[51.11114,17.02293],[51.11096,17.02355],[51.11097,17.02422],[51.11086,17.02482],[51.11074,17.02543],[51.11048,17.02607],[51.11008,17.0264],[51.1097,17.02653],[51.1093,17.02665],[51.10891,17.0269],[51.10856,17.02729],[51.10837,17.02766],[51.10818,17.02812],[51.10804,17.02865],[51.10791,17.02915],[51.10784,17.0297],[51.10766,17.03032],[51.10752,17.03094],[51.10738,17.03156],[51.10719,17.03213],[51.1071,17.03267],[51.1071,17.03322],[51.10708,17.03374],[51.10708,17.03428],[51.10708,17.03481],[51.10709,17.03548],[51.10726,17.03615],[51.10752,17.03678],[51.10772,17.03743],[51.10769,17.03825],[51.10762,17.0387],[51.10752,17.03978],[51.10748,17.0403],[51.10743,17.04083],[51.10735,17.04148],[51.10725,17.04214],[51.10717,17.04266],[51.1071,17.0432],[51.10705,17.04371],[51.1071,17.0443],[51.10724,17.04495],[51.10739,17.04563],[51.10756,17.04627],[51.10771,17.04689],[51.10789,17.04755],[51.10803,17.04808],[51.10815,17.0486],[51.10827,17.04911],[51.1084,17.04961],[51.10856,17.05014],[51.1088,17.05064],[51.10908,17.05108],[51.10925,17.05166],[51.10941,17.05226],[51.10953,17.05284],[51.10966,17.05337],[51.10976,17.05398],[51.10987,17.05456],[51.10999,17.05508],[51.11012,17.05559],[51.11023,17.05606],[51.11033,17.05649],[51.11042,17.05685],[51.11055,17.05731],[51.11069,17.05776],[51.11079,17.05814],[51.11091,17.05853],[51.11103,17.05902],[51.11111,17.05954],[51.11117,17.06008],[51.11132,17.06069],[51.11155,17.06122],[51.11177,17.06181],[51.11195,17.0624],[51.11214,17.06296],[51.11229,17.06351],[51.11244,17.06399],[51.11263,17.0644],[51.11281,17.06415],[51.11266,17.06362],[51.11246,17.06301],[51.11229,17.0624],[51.11211,17.06178],[51.11203,17.06118],[51.11234,17.06078],[51.11269,17.06067],[51.11304,17.0606],[51.11337,17.06057],[51.11371,17.06047],[51.11401,17.0603],[51.11443,17.06038],[51.11481,17.06051],[51.11522,17.06067],[51.11564,17.0608],[51.11591,17.06032],[51.11599,17.05974],[51.11604,17.05921],[51.11609,17.05872],[51.11613,17.0582],[51.11616,17.05761],[51.11624,17.05702],[51.11628,17.0564],[51.11631,17.05575],[51.11638,17.05509],[51.11642,17.05445],[51.1165,17.05383],[51.11659,17.05327],[51.11669,17.05278],[51.11676,17.05228],[51.11682,17.05169],[51.11673,17.05107],[51.11673,17.05043],[51.11679,17.04974],[51.11683,17.04914],[51.11688,17.04848],[51.11695,17.04791],[51.11699,17.04737],[51.11707,17.04686],[51.11713,17.04634],[51.11714,17.04571],[51.11716,17.04507],[51.11714,17.04441],[51.1171,17.0438],[51.1171,17.04316],[51.11711,17.0425],[51.1169,17.04204],[51.11651,17.0419],[51.11624,17.04166],[51.11596,17.04137],[51.11562,17.04111],[51.11525,17.04089],[51.11485,17.04069],[51.11443,17.04053],[51.11406,17.04022],[51.11374,17.03992],[51.11336,17.03965],[51.11338,17.03906],[51.11357,17.03864],[51.11373,17.0382],[51.1139,17.03774],[51.11412,17.03734],[51.11442,17.03694],[51.11462,17.03637],[51.11472,17.03573],[51.11464,17.03514],[51.11447,17.03466],[51.1143,17.03417],[51.11415,17.03369],[51.114,17.03321],[51.11382,17.03267],[51.11364,17.03208],[51.11344,17.03154],[51.11326,17.03093],[51.11309,17.03032],[51.11298,17.02974],[51.11292,17.02917],[51.11283,17.02865],[51.11274,17.02816],[51.11258,17.02773],[51.11238,17.02739],[51.11203,17.02706],[51.11167,17.02678],[51.11166,17.02613],[51.11156,17.02553],[51.11147,17.02495],[51.11137,17.02445],[51.11129,17.02396],[51.11129,17.0234],[51.11145,17.02288],[51.1116,17.02227],[51.1118,17.02176],[51.11199,17.02119],[51.11216,17.02059],[51.11233,17.02002],[51.11245,17.01944],[51.11255,17.01893],[51.11262,17.01841],[51.11267,17.01789],[51.11271,17.01737],[51.1128,17.01677],[51.11283,17.01611],[51.11286,17.01552],[51.11289,17.01487],[51.11291,17.01422],[51.11294,17.01365],[51.11298,17.01313],[51.11301,17.01263],[51.11303,17.01211],[51.11303,17.01159],[51.11306,17.01101],[51.11308,17.01035],[51.11308,17.00971],[51.11311,17.00908],[51.11317,17.0085],[51.11322,17.00796],[51.11324,17.00745],[51.11328,17.00696],[51.1134,17.00648],[51.11354,17.00602],[51.11371,17.00563],[51.11386,17.00525],[51.11402,17.00486],[51.11419,17.00452],[51.11437,17.00414],[51.11454,17.00371],[51.11471,17.00328],[51.11491,17.00291],[51.11511,17.00254],[51.11531,17.00217],[51.1156,17.00176],[51.11589,17.00133],[51.11621,17.00097],[51.11655,17.00064],[51.11689,17.00039],[51.1172,17.00004],[51.11746,16.99974],[51.11771,16.99946],[51.11797,16.99918],[51.11818,16.99895],[51.11853,16.99857],[51.11885,16.99822],[51.11918,16.99787],[51.11948,16.99752],[51.11979,16.99711],[51.12004,16.9967],[51.12023,16.99632],[51.12043,16.99597],[51.12063,16.99559],[51.12082,16.99522],[51.12101,16.99484],[51.12124,16.99435],[51.12146,16.99383],[51.1217,16.99334],[51.12191,16.99279],[51.12212,16.99228],[51.12229,16.99185],[51.12244,16.99142],[51.1226,16.99097],[51.12278,16.99055],[51.12297,16.99007],[51.12321,16.98957],[51.12343,16.98906],[51.12365,16.98853],[51.12386,16.98803],[51.12406,16.98748],[51.12423,16.98708],[51.12441,16.98668],[51.12456,16.98626],[51.12472,16.98588],[51.12489,16.9853],[51.12508,16.98474],[51.12526,16.98416],[51.12547,16.98364],[51.12568,16.98313],[51.12585,16.98262],[51.12604,16.98224],[51.12622,16.98188],[51.12641,16.98151],[51.12657,16.98107],[51.12677,16.98054],[51.12697,16.98005],[51.12717,16.97952],[51.12735,16.97897],[51.12754,16.97846],[51.1277,16.9779],[51.12786,16.97742],[51.12801,16.97698],[51.12813,16.97654],[51.12826,16.9761],[51.12841,16.9757],[51.12855,16.97515],[51.12871,16.97458],[51.12887,16.974],[51.12904,16.97347],[51.12922,16.97298],[51.12936,16.97257],[51.12948,16.97212],[51.1296,16.97167],[51.12973,16.97119],[51.12984,16.97079],[51.12997,16.97038],[51.13009,16.96994],[51.13023,16.96952],[51.13037,16.96904],[51.13054,16.96848],[51.1307,16.96796],[51.1308,16.96748],[51.13089,16.96698],[51.131,16.96652],[51.13113,16.96597],[51.13126,16.9654],[51.13138,16.96481],[51.1315,16.96423],[51.13162,16.96364],[51.13174,16.96304],[51.13187,16.96244],[51.13199,16.96186],[51.13211,16.96133],[51.13218,16.96082],[51.13227,16.96037],[51.13238,16.95991],[51.13248,16.95945],[51.13257,16.95898],[51.13266,16.95841],[51.1328,16.95786],[51.13295,16.95731],[51.13314,16.95677],[51.13332,16.9563],[51.1335,16.95594],[51.13372,16.95561],[51.13397,16.95522],[51.13426,16.95474],[51.13454,16.9543],[51.13482,16.95385],[51.13506,16.95345],[51.13527,16.9531],[51.13547,16.95271],[51.1357,16.95215],[51.13592,16.95162],[51.13612,16.95107],[51.13633,16.95057],[51.13655,16.95001],[51.13675,16.94951],[51.13695,16.94897],[51.13715,16.94845],[51.13738,16.94785],[51.13757,16.94721],[51.13774,16.9466],[51.13791,16.94597],[51.13806,16.94537],[51.13818,16.94475],[51.13825,16.94408],[51.13832,16.94342],[51.13858,16.94289],[51.13898,16.94259],[51.13923,16.94201],[51.13923,16.94123],[51.13926,16.94045],[51.13946,16.93986],[51.13994,16.93988],[51.14039,16.94019],[51.14028,16.94093],[51.14019,16.94129],[51.14008,16.94168],[51.13997,16.94207],[51.1401,16.94236],[51.1403,16.94266],[51.14052,16.94283],[51.14098,16.94353],[51.14135,16.9438],[51.14138,16.9438],[51.14138,16.94379],[51.1414,16.94386],[51.14148,16.94404]],[[51.11053,17.00619],[51.11048,17.00667],[51.1106,17.00699],[51.11087,17.00677],[51.11092,17.00716],[51.11082,17.00762],[51.11074,17.00807],[51.11066,17.00856],[51.11058,17.00901],[51.1105,17.00948],[51.1104,17.01004],[51.11028,17.01057],[51.11017,17.01113],[51.11009,17.0117],[51.11,17.01226],[51.10994,17.01279],[51.10986,17.01326],[51.10977,17.01375],[51.10972,17.01424],[51.1096,17.01477],[51.10946,17.01528],[51.10932,17.01586],[51.10925,17.01643],[51.10934,17.01691],[51.10972,17.01705],[51.11008,17.01722],[51.11036,17.01731],[51.11053,17.01742],[51.11087,17.01754],[51.11123,17.01771],[51.11151,17.01792],[51.11184,17.01804],[51.1123,17.01814],[51.11241,17.01751],[51.1125,17.01693],[51.11253,17.01643],[51.11258,17.01596],[51.11239,17.01569],[51.11209,17.01563],[51.11176,17.01538],[51.11135,17.01521],[51.11092,17.01507],[51.11075,17.01475],[51.11086,17.01412],[51.111,17.01354],[51.11109,17.01297],[51.11115,17.01242],[51.11124,17.01195],[51.11129,17.01143],[51.11136,17.01087],[51.11094,17.01079],[51.11057,17.01069],[51.11033,17.01055],[51.11041,17.00993],[51.11051,17.00934],[51.11064,17.00878],[51.11071,17.00825],[51.11077,17.00772],[51.11055,17.0072],[51.1105,17.0066],[51.11064,17.00597]],[[51.11042,17.00686],[51.11064,17.00701],[51.11091,17.00683],[51.1109,17.00727],[51.11081,17.00778],[51.11071,17.00827],[51.11063,17.00872],[51.11055,17.00918],[51.11046,17.00965],[51.11037,17.01013],[51.11026,17.01068],[51.11013,17.01124],[51.11007,17.01178],[51.11,17.01229],[51.10989,17.01279],[51.10981,17.01329],[51.10974,17.01379],[51.10967,17.01426],[51.10958,17.01474],[51.10949,17.01525],[51.10937,17.01577],[51.10927,17.01632],[51.1092,17.01694],[51.10901,17.01749],[51.10893,17.01806],[51.10886,17.01856],[51.1088,17.01904],[51.10884,17.01957],[51.10869,17.01996],[51.10849,17.02042],[51.10833,17.02091],[51.10845,17.02143],[51.10878,17.02165],[51.10912,17.02173],[51.10951,17.02185],[51.10987,17.02171],[51.1102,17.02171],[51.11048,17.02163],[51.11082,17.02154],[51.1112,17.02132],[51.11145,17.0209],[51.11173,17.02046],[51.11188,17.01985],[51.11202,17.01925],[51.11212,17.01861],[51.11228,17.01799],[51.11239,17.01749],[51.11245,17.01695],[51.1125,17.01648],[51.11257,17.01592],[51.11258,17.01523],[51.11258,17.01462],[51.11261,17.01402],[51.11262,17.01339],[51.11265,17.01283],[51.11262,17.01227],[51.11262,17.01174],[51.11265,17.01121],[51.11269,17.01077],[51.11267,17.0102],[51.11269,17.00957],[51.11271,17.00892],[51.1127,17.00828],[51.11272,17.00765],[51.1128,17.00709],[51.11288,17.0065],[51.11299,17.00574],[51.11324,17.00537],[51.11339,17.0051],[51.11365,17.00463],[51.11388,17.00412],[51.11408,17.00359],[51.1143,17.00312],[51.11456,17.00266],[51.11484,17.00225],[51.1151,17.00197],[51.11529,17.00158],[51.11543,17.00115],[51.11568,17.00085],[51.11599,17.00046],[51.11629,17.00016],[51.11668,16.99983],[51.11706,16.99937],[51.1174,16.99912],[51.11776,16.99894],[51.11801,16.99861],[51.11823,16.99821],[51.11847,16.99785],[51.1187,16.99746],[51.119,16.99711],[51.11932,16.99681],[51.11966,16.9964],[51.11991,16.99603],[51.1197,16.99637],[51.11939,16.99676],[51.11911,16.99708],[51.11887,16.99742],[51.1186,16.99772],[51.11835,16.99803],[51.11807,16.99843],[51.1178,16.9988],[51.11747,16.99907],[51.11711,16.99935],[51.11675,16.99957],[51.11649,16.99931],[51.1162,16.99906],[51.11583,16.99902],[51.11555,16.99898],[51.11521,16.99899],[51.11487,16.99877],[51.11452,16.99855],[51.11413,16.99844],[51.11377,16.99836],[51.11356,16.99807],[51.11317,16.99797],[51.11286,16.99789],[51.11258,16.99774],[51.11261,16.99731],[51.11272,16.99678],[51.11285,16.99622],[51.11287,16.99576],[51.11256,16.99596],[51.11246,16.99659],[51.1124,16.99722],[51.11231,16.99779],[51.11218,16.99825],[51.11209,16.99873],[51.112,16.9992],[51.11191,16.9997],[51.11179,17.00031],[51.11163,17.00086],[51.1115,17.00147],[51.11143,17.00208],[51.11135,17.00266],[51.11125,17.00323],[51.11114,17.00371],[51.11102,17.00417],[51.11087,17.00468],[51.11072,17.00532],[51.1106,17.00595],[51.11046,17.00666],[51.11017,17.00731],[51.10974,17.00769],[51.10941,17.00822],[51.10945,17.00814],[51.10969,17.00775],[51.10992,17.00742],[51.11026,17.00716],[51.11047,17.00656],[51.11058,17.00592]],[[51.11077,17.00692],[51.11093,17.00702],[51.11083,17.00748],[51.11073,17.00795],[51.11066,17.00841],[51.11059,17.00887],[51.11049,17.00932],[51.11041,17.00977],[51.11034,17.01022],[51.11023,17.01071],[51.11015,17.0113],[51.11005,17.01185],[51.10997,17.01237],[51.10988,17.01286],[51.10978,17.01336],[51.1097,17.01387],[51.10961,17.01437],[51.10952,17.01487],[51.10943,17.01535],[51.10932,17.01583],[51.10924,17.01633],[51.10917,17.01686],[51.10904,17.01737],[51.10896,17.01782],[51.10887,17.01837],[51.10878,17.01889],[51.10877,17.01942],[51.1087,17.01981],[51.10854,17.02022],[51.10846,17.02062],[51.10833,17.02108],[51.10851,17.02143],[51.10884,17.02162],[51.10916,17.02175],[51.10951,17.0219],[51.10987,17.02183],[51.11021,17.0217],[51.11057,17.02162],[51.11089,17.02151],[51.11112,17.02143],[51.11135,17.02115],[51.11161,17.02075],[51.11179,17.02023],[51.11194,17.0197],[51.11208,17.01916],[51.11216,17.01854],[51.1123,17.0179],[51.1124,17.01732],[51.11246,17.01669],[51.11249,17.01611],[51.11252,17.01551],[51.11254,17.01496],[51.11256,17.01447],[51.11259,17.01393],[51.11258,17.01333],[51.11261,17.01276],[51.11257,17.01216],[51.11258,17.01153],[51.11261,17.01096],[51.11263,17.0105],[51.11259,17.01002],[51.11262,17.00953],[51.11266,17.00903],[51.11268,17.00844],[51.11269,17.0078],[51.11274,17.00716],[51.11282,17.00649],[51.11297,17.00574],[51.11324,17.00538],[51.11352,17.00492],[51.11375,17.00443],[51.11397,17.00391],[51.11413,17.00344],[51.1144,17.00279],[51.11481,17.00237],[51.11508,17.00197],[51.11531,17.0015],[51.11556,17.00102],[51.1159,17.00066],[51.11609,17.00029],[51.11638,17.00007],[51.11638,16.99985],[51.11607,16.99962],[51.11573,16.99937],[51.11542,16.99904],[51.11502,16.99888],[51.11472,16.99867],[51.11444,16.99852],[51.11415,16.99846],[51.11388,16.99835],[51.11359,16.9984],[51.11345,16.99804],[51.11317,16.99795],[51.11289,16.99788],[51.11262,16.99778],[51.11268,16.99721],[51.11276,16.99657],[51.11287,16.99595],[51.11272,16.99586],[51.1126,16.99534],[51.11251,16.99517],[51.11272,16.99504],[51.11267,16.99467],[51.11251,16.99431],[51.11235,16.99394],[51.11227,16.99358],[51.11229,16.99352],[51.1123,16.99339],[51.11213,16.99364],[51.11181,16.99406],[51.11196,16.99379],[51.11231,16.99354],[51.11247,16.99396],[51.11265,16.99454],[51.11295,16.99431],[51.11304,16.99366],[51.11315,16.99303],[51.11327,16.99243],[51.11336,16.9918],[51.11346,16.99122],[51.11353,16.99076],[51.11358,16.99037],[51.11359,16.98985],[51.11357,16.98921],[51.1137,16.98867],[51.1138,16.9881],[51.11385,16.98765],[51.11388,16.98794],[51.11377,16.9884],[51.11364,16.98878],[51.11359,16.98924],[51.11362,16.9899],[51.11356,16.99054],[51.11348,16.99116],[51.11337,16.99171],[51.11332,16.99218],[51.11323,16.99263],[51.11313,16.99309],[51.11306,16.99356],[51.11297,16.99402],[51.1129,16.99445],[51.11275,16.99489],[51.11268,16.9955],[51.11253,16.99612],[51.11244,16.99673],[51.1124,16.99735],[51.11228,16.99794],[51.11213,16.99851],[51.11203,16.99911],[51.11193,16.9996],[51.11187,17.00006],[51.11176,17.00052],[51.1116,17.00097],[51.11152,17.00143],[51.11149,17.00192],[51.1114,17.00245],[51.11125,17.00317],[51.11111,17.00389],[51.11096,17.00452],[51.1109,17.00493],[51.11073,17.00533],[51.11064,17.00577],[51.11057,17.00621],[51.11048,17.00665]],[[51.1221,16.99114],[51.12225,16.99078],[51.12239,16.99041],[51.12254,16.99004],[51.1227,16.98968],[51.12287,16.98929],[51.12303,16.9889],[51.1232,16.9885],[51.12335,16.98806],[51.12358,16.98753],[51.1238,16.98701],[51.12401,16.98647],[51.12423,16.98595],[51.12443,16.98539],[51.12455,16.98488],[51.1247,16.98447],[51.12469,16.98441],[51.12457,16.98483],[51.12448,16.98522],[51.12434,16.98568],[51.12412,16.98621],[51.1239,16.98674],[51.12373,16.98732],[51.12347,16.98786],[51.12326,16.98839],[51.12307,16.98883],[51.1229,16.98925],[51.12272,16.98962],[51.12256,16.98998],[51.12238,16.99041],[51.12218,16.99092],[51.12196,16.99146],[51.12175,16.99199],[51.12154,16.99252],[51.12132,16.99283],[51.12127,16.9933],[51.12109,16.99367],[51.1209,16.99405],[51.12069,16.99441],[51.12044,16.99486],[51.12024,16.99537],[51.11998,16.99593],[51.1197,16.99638],[51.11939,16.99676],[51.11911,16.99699],[51.11892,16.99732],[51.11871,16.99759],[51.11847,16.99784],[51.11825,16.99815],[51.11799,16.99852],[51.11766,16.99895],[51.11729,16.99923],[51.11686,16.99957],[51.11651,16.99997],[51.1162,16.9997],[51.11586,16.99945],[51.1156,16.99923],[51.11535,16.99902],[51.11506,16.99889],[51.11477,16.99868],[51.1144,16.99851],[51.114,16.9984],[51.11365,16.99843],[51.1135,16.99798],[51.11323,16.99794],[51.11296,16.9979],[51.11266,16.99784],[51.11261,16.99746],[51.1127,16.99688],[51.1128,16.99636],[51.11274,16.99669],[51.11264,16.9973],[51.11253,16.99785],[51.11242,16.99842],[51.11233,16.99883],[51.11226,16.99926],[51.11219,16.99972],[51.11204,17.00025],[51.11211,17.00085],[51.11189,17.00129],[51.11172,17.00181],[51.11161,17.00242],[51.11163,17.00306],[51.11149,17.00365],[51.1114,17.00427],[51.11132,17.00489],[51.11119,17.0054],[51.11113,17.00585],[51.11106,17.00629],[51.11095,17.00684],[51.11084,17.0075],[51.11076,17.00787],[51.11088,17.00723],[51.11084,17.00677],[51.11046,17.00698],[51.11018,17.00727],[51.11002,17.00739],[51.11027,17.00714],[51.11044,17.00674],[51.11053,17.00632],[51.11061,17.00588],[51.11069,17.00548],[51.11078,17.00509],[51.1108,17.00513],[51.1107,17.00555],[51.11057,17.00588],[51.1103,17.00581],[51.1101,17.00572],[51.11006,17.00579]],[[51.11051,17.00651],[51.11052,17.00691],[51.11072,17.00691],[51.11097,17.00686],[51.11093,17.00726],[51.11084,17.00767],[51.11075,17.00811],[51.11068,17.00851],[51.1106,17.0089],[51.11054,17.00933],[51.11046,17.00979],[51.11038,17.01025],[51.11028,17.01071],[51.11018,17.01121],[51.11009,17.01164],[51.11002,17.01208],[51.10995,17.01253],[51.10989,17.01298],[51.10981,17.01337],[51.10972,17.01381],[51.10964,17.01424],[51.10957,17.01467],[51.10947,17.01512],[51.10939,17.01557],[51.10931,17.016],[51.10925,17.01644],[51.10918,17.01688],[51.10907,17.01729],[51.109,17.01772],[51.10877,17.0197],[51.10853,17.02023],[51.10834,17.02068],[51.10836,17.02129],[51.10867,17.02158],[51.10892,17.02168],[51.10924,17.02181],[51.10957,17.02188],[51.10987,17.02181],[51.11018,17.02167],[51.11053,17.02161],[51.11089,17.02152],[51.11124,17.02133],[51.11146,17.02097],[51.1117,17.02054],[51.11182,17.02007],[51.11195,17.0196],[51.11199,17.01914],[51.11208,17.01864],[51.1123,17.01782],[51.11243,17.01728],[51.11251,17.01667],[51.11253,17.01606],[51.11252,17.01543],[51.11259,17.01495],[51.11258,17.01444],[51.11258,17.01395],[51.11259,17.01345],[51.11263,17.01299],[51.11262,17.01249],[51.11258,17.01192],[51.11261,17.01131],[51.11263,17.01071],[51.11264,17.01015],[51.11264,17.00961],[51.11266,17.00913],[51.11268,17.00868],[51.11268,17.00821],[51.11266,17.00769],[51.11268,17.00722],[51.1128,17.00666],[51.11295,17.00581],[51.11318,17.00535],[51.11346,17.00494],[51.11369,17.00445],[51.11388,17.00405],[51.11403,17.00362],[51.11422,17.00321],[51.11441,17.00281],[51.11465,17.00245],[51.11497,17.00212],[51.11524,17.00164],[51.1155,17.00114],[51.11581,17.00067],[51.11611,17.00031],[51.1164,17.0001],[51.11665,16.9998],[51.11691,16.99946],[51.11716,16.99913],[51.11749,16.99901],[51.11787,16.99882],[51.11816,16.99834],[51.11847,16.99789],[51.1188,16.99749],[51.11908,16.99718],[51.11933,16.99687],[51.11957,16.99653],[51.1198,16.99621],[51.12,16.99585],[51.12021,16.99545],[51.12043,16.99494],[51.12069,16.99441],[51.12097,16.99391],[51.12121,16.99337],[51.12131,16.99288],[51.12147,16.99258],[51.1217,16.99213],[51.12186,16.99175]],[[51.11015,17.00598],[51.11091,17.00724],[51.11082,17.00771],[51.11074,17.00816],[51.11066,17.00854],[51.11059,17.00896],[51.11052,17.00941],[51.11042,17.00985],[51.11034,17.01032],[51.11026,17.01087],[51.11016,17.01141],[51.11006,17.01197],[51.10997,17.01254],[51.10986,17.01309],[51.10971,17.01367],[51.10962,17.01426],[51.10955,17.01478],[51.10947,17.01525],[51.10938,17.01571],[51.1093,17.0162],[51.10909,17.01723],[51.10892,17.01804],[51.10883,17.01866],[51.10878,17.01926],[51.10875,17.01981],[51.10852,17.02041],[51.10834,17.02095],[51.10846,17.02142],[51.10874,17.02162],[51.10905,17.02169],[51.10935,17.02186],[51.10967,17.02185],[51.11005,17.02175],[51.11044,17.0217],[51.11082,17.02166],[51.1112,17.02136],[51.11151,17.02095],[51.11177,17.02045],[51.11194,17.01983],[51.11203,17.01928],[51.11207,17.01878],[51.11239,17.01824],[51.11241,17.01772],[51.11248,17.01717],[51.11254,17.01655],[51.11258,17.0159],[51.11261,17.01523],[51.11265,17.01456],[51.11264,17.01392],[51.11263,17.01325],[51.11264,17.01261],[51.11261,17.01211],[51.11258,17.0116],[51.11264,17.01114],[51.11269,17.01067],[51.11275,17.01006],[51.11272,17.0094],[51.11274,17.00876],[51.11274,17.00808],[51.11277,17.0074],[51.11283,17.00674],[51.11292,17.00616],[51.11301,17.0055],[51.11332,17.00532],[51.11354,17.00495],[51.11375,17.00455],[51.11391,17.00411],[51.11412,17.00358],[51.11436,17.00303],[51.11465,17.00254],[51.11498,17.00212],[51.1153,17.00169],[51.11553,17.00117],[51.11578,17.00071],[51.11615,17.00042],[51.11636,17.00018],[51.11643,16.99988],[51.11616,16.99966],[51.11591,16.99946],[51.11563,16.99927],[51.11537,16.99902]],[[51.11828,17.09677],[51.11823,17.09729],[51.11789,17.09771],[51.11774,17.09817],[51.11779,17.09889],[51.11781,17.09955],[51.11784,17.10023],[51.11787,17.10089],[51.11791,17.10142],[51.11806,17.10168],[51.11834,17.10142],[51.11864,17.10111],[51.11898,17.10072],[51.11935,17.10035],[51.11972,17.09996],[51.12006,17.09957],[51.12041,17.09916],[51.12075,17.09881],[51.12108,17.09844],[51.12137,17.09806],[51.12164,17.09778],[51.12193,17.09746],[51.12219,17.09716],[51.12245,17.09682],[51.12279,17.0964],[51.12312,17.09596],[51.12341,17.09551],[51.12371,17.09501],[51.12398,17.09448],[51.12425,17.09401],[51.12446,17.09347],[51.12465,17.093],[51.12483,17.09255],[51.12502,17.0921],[51.1252,17.09165],[51.12539,17.09119],[51.12559,17.09055],[51.12575,17.08996],[51.12591,17.08935],[51.12605,17.08875],[51.12618,17.08812],[51.12628,17.08753],[51.12637,17.08698],[51.12641,17.08646],[51.12645,17.08598],[51.1265,17.08545],[51.12653,17.08492],[51.12653,17.08434],[51.12656,17.08364],[51.12658,17.08303],[51.12656,17.0824],[51.12658,17.08177],[51.12664,17.08115],[51.12675,17.08155],[51.12671,17.08214],[51.12669,17.08259],[51.12674,17.0831],[51.12671,17.08362],[51.12669,17.08412],[51.1267,17.08473],[51.12665,17.08544],[51.12661,17.08612],[51.12651,17.08675],[51.12644,17.08739],[51.12632,17.088],[51.12621,17.08863],[51.12609,17.08916],[51.12598,17.08963],[51.12586,17.09011],[51.12574,17.09057],[51.12561,17.09108],[51.12538,17.09168],[51.12516,17.09215],[51.12497,17.09267],[51.12472,17.09327],[51.12447,17.09382],[51.12423,17.09438],[51.12397,17.09486],[51.12377,17.09523],[51.12351,17.09557],[51.1233,17.09595],[51.12305,17.09632],[51.12275,17.09675],[51.12238,17.09717],[51.12204,17.09757],[51.12169,17.09795],[51.12136,17.09836],[51.12102,17.09872],[51.12069,17.0991],[51.12038,17.09944],[51.12011,17.09971],[51.11986,17.09998],[51.11961,17.10025],[51.11933,17.10056],[51.11899,17.10097],[51.11865,17.10127],[51.11831,17.10168],[51.11797,17.10206],[51.11766,17.1025],[51.1173,17.10281],[51.11697,17.10318],[51.11669,17.10348],[51.11642,17.1038],[51.11621,17.10397],[51.11639,17.10363],[51.11668,17.10327],[51.11703,17.10288],[51.11736,17.10251],[51.1177,17.10214],[51.11789,17.10168],[51.11786,17.10103],[51.11781,17.10038],[51.1178,17.09977],[51.11775,17.09924],[51.11771,17.09873],[51.11769,17.09819],[51.11763,17.09761],[51.11766,17.09698],[51.11794,17.09644],[51.11824,17.09687],[51.11811,17.09728],[51.11792,17.09765],[51.11772,17.09806],[51.11774,17.09874],[51.11781,17.09931],[51.11782,17.09981],[51.11784,17.10034],[51.11786,17.10086],[51.11785,17.10139],[51.11816,17.10171],[51.1185,17.10125],[51.11885,17.1009],[51.11919,17.10047],[51.11948,17.10009],[51.11984,17.09975],[51.12019,17.09937],[51.12046,17.09908],[51.12072,17.09877],[51.121,17.09847],[51.12124,17.09816],[51.12153,17.09779],[51.12192,17.09747],[51.12226,17.09709],[51.12258,17.09664],[51.12291,17.09619],[51.12321,17.09579],[51.12348,17.09534],[51.12375,17.09488],[51.12397,17.09448],[51.1242,17.09408],[51.12437,17.09367],[51.12453,17.09323],[51.12476,17.09266],[51.12503,17.09215],[51.12526,17.09154],[51.12545,17.09096],[51.1256,17.09035],[51.12579,17.08977],[51.12593,17.08918],[51.12607,17.08868],[51.12615,17.08819],[51.12624,17.08767],[51.1263,17.08719],[51.12636,17.08664],[51.12644,17.086],[51.12651,17.08534],[51.12655,17.08467],[51.12657,17.08398],[51.1266,17.0833],[51.12657,17.08264],[51.12658,17.082],[51.12662,17.08154],[51.12669,17.08113],[51.12672,17.08157],[51.1267,17.0821],[51.12671,17.08271],[51.12671,17.08341],[51.12668,17.08412],[51.12667,17.0848],[51.1266,17.08548],[51.12658,17.08615],[51.12647,17.08677],[51.12642,17.08737],[51.12632,17.08787],[51.12626,17.08837],[51.12615,17.08887],[51.12602,17.08938],[51.12585,17.09003],[51.12565,17.09066],[51.12546,17.09135],[51.12524,17.09197],[51.12501,17.09249],[51.12475,17.0931],[51.12451,17.09368],[51.12431,17.09414],[51.12411,17.09456],[51.12388,17.09492],[51.12367,17.09536],[51.12339,17.09576],[51.123,17.09629],[51.12265,17.09678],[51.12228,17.09727],[51.1219,17.09773],[51.12148,17.09822],[51.12112,17.09856],[51.1208,17.09897],[51.12053,17.09926],[51.12026,17.09956],[51.11998,17.09987],[51.1197,17.10015],[51.11935,17.10055],[51.11899,17.10094],[51.11863,17.10133],[51.11827,17.10176],[51.1179,17.10219],[51.11752,17.10258],[51.11719,17.10298],[51.11689,17.1033],[51.11661,17.10362],[51.11633,17.10392],[51.11628,17.10379],[51.11654,17.10341],[51.1169,17.10303],[51.11726,17.10262],[51.11761,17.10222],[51.11791,17.10176],[51.11785,17.10102],[51.11779,17.10029],[51.11779,17.09967],[51.11778,17.09918],[51.11774,17.09868],[51.1177,17.09813],[51.11765,17.09762],[51.11767,17.09694],[51.11802,17.0964],[51.11826,17.09705]],[[51.11066,17.00603],[51.11052,17.00645],[51.11044,17.00696],[51.11076,17.00682],[51.11091,17.00704],[51.11084,17.0075],[51.11074,17.00797],[51.11066,17.00846],[51.11059,17.00894],[51.11051,17.0094],[51.11039,17.00998],[51.11028,17.01056],[51.11017,17.01116],[51.11006,17.01176],[51.10995,17.01232],[51.10994,17.01285],[51.10979,17.01331],[51.10973,17.01382],[51.10965,17.01433],[51.10956,17.01484],[51.10944,17.01534],[51.10932,17.0159],[51.10922,17.0165],[51.10914,17.01703],[51.10899,17.01758],[51.10888,17.01821],[51.1088,17.01873],[51.10873,17.01922],[51.10876,17.0197],[51.10856,17.02018],[51.10843,17.02067],[51.10836,17.02114],[51.10857,17.02144],[51.10891,17.02164],[51.10925,17.0218],[51.10963,17.02178],[51.11003,17.02175],[51.11039,17.02163],[51.11076,17.02151],[51.11101,17.02146],[51.11122,17.02125],[51.11147,17.02093],[51.11169,17.0205],[51.11186,17.01991],[51.11198,17.01927],[51.11212,17.01858],[51.1123,17.01795],[51.11242,17.01722],[51.1125,17.01653],[51.11253,17.01597],[51.11254,17.01541],[51.11256,17.01491],[51.11256,17.01437],[51.11258,17.01384],[51.11259,17.01328],[51.11263,17.01265],[51.11261,17.01203],[51.11262,17.01138],[51.11264,17.01074],[51.11265,17.01007],[51.11261,17.00954],[51.11266,17.00905],[51.11268,17.00853],[51.11271,17.00802],[51.11272,17.00745],[51.11277,17.00694],[51.11294,17.00583],[51.11324,17.00536],[51.11355,17.0048],[51.11382,17.00424],[51.11405,17.00363],[51.11427,17.00313],[51.11446,17.00268],[51.11472,17.00238],[51.11496,17.00204],[51.11517,17.0017],[51.11536,17.00133],[51.11563,17.00087],[51.11599,17.00048],[51.1163,17.00002],[51.11632,16.99978],[51.11598,16.9995],[51.11562,16.99923],[51.11531,16.999],[51.11502,16.99884],[51.11473,16.9987],[51.11443,16.99851],[51.11412,16.99844],[51.11364,16.99831],[51.11337,16.99793],[51.11296,16.99783],[51.11263,16.99797],[51.11256,16.99863],[51.11244,16.99926],[51.11234,16.99977],[51.1123,17.00031],[51.11224,17.00076],[51.11209,17.00117],[51.11201,17.00172],[51.11193,17.00221],[51.11179,17.00267],[51.11147,17.00287],[51.11134,17.00345],[51.11111,17.00388],[51.11095,17.0045],[51.11081,17.00503],[51.11069,17.00549],[51.11055,17.00584],[51.11025,17.00576],[51.11013,17.00569]],[[51.11045,17.00674],[51.11065,17.00697],[51.11091,17.00682],[51.11088,17.00724],[51.11079,17.00772],[51.1107,17.00819],[51.11061,17.00866],[51.11053,17.00913],[51.11046,17.0096],[51.11038,17.01005],[51.1103,17.0105],[51.11022,17.01097],[51.11013,17.01144],[51.11006,17.0119],[51.10998,17.01237],[51.10991,17.0129],[51.10978,17.01345],[51.10967,17.01404],[51.10957,17.01462],[51.10947,17.01516],[51.10937,17.01564],[51.10928,17.01613],[51.10921,17.01663],[51.10915,17.01705],[51.10902,17.01751],[51.10891,17.01803],[51.10883,17.01858],[51.10874,17.01918],[51.1088,17.01963],[51.10858,17.02012],[51.10846,17.0207],[51.10833,17.02118],[51.10854,17.02144],[51.10876,17.0216],[51.10904,17.02171],[51.10934,17.02186],[51.10957,17.0219],[51.10988,17.02187],[51.11032,17.0217],[51.11072,17.02159],[51.11105,17.02144],[51.11134,17.02108],[51.11165,17.02072],[51.11179,17.02016],[51.11191,17.01967],[51.11198,17.01918],[51.11206,17.0187],[51.11227,17.01835],[51.1123,17.01782],[51.11243,17.01719],[51.11249,17.01658],[51.11254,17.01597],[51.11256,17.01534],[51.11258,17.01472],[51.11259,17.01417],[51.11261,17.01372],[51.11261,17.01323],[51.11261,17.01273],[51.1126,17.01222],[51.11257,17.01171],[51.11262,17.01117],[51.11264,17.01053],[51.11265,17.00985],[51.11267,17.00927],[51.1127,17.00865],[51.11269,17.00799],[51.11266,17.00746],[51.11277,17.00707],[51.11283,17.00654],[51.11292,17.00604],[51.11298,17.00551],[51.11332,17.00532],[51.11357,17.00482],[51.11379,17.00431],[51.114,17.00378],[51.11419,17.00328],[51.11479,17.00235],[51.11504,17.00197],[51.11527,17.00162],[51.11547,17.00121],[51.11566,17.00082],[51.11595,17.00053],[51.11608,17.00026],[51.11647,16.99989],[51.11616,16.99966],[51.11583,16.99943],[51.11552,16.99913],[51.11515,16.99893],[51.11479,16.99874],[51.11449,16.99857],[51.11423,16.99846],[51.1139,16.99837],[51.11368,16.99843],[51.11356,16.99807],[51.11324,16.99797],[51.11285,16.99787],[51.11256,16.99767],[51.11267,16.99704],[51.11278,16.9965],[51.1129,16.99595],[51.113,16.99543],[51.11309,16.99494],[51.11294,16.99468],[51.11293,16.99427],[51.11302,16.99374],[51.11314,16.99308],[51.11326,16.99243],[51.11335,16.99177],[51.11345,16.99113],[51.11355,16.9905],[51.1136,16.98982],[51.11357,16.98929],[51.11357,16.9891],[51.11357,16.98904],[51.11354,16.98941],[51.1136,16.98994],[51.11357,16.99048],[51.1135,16.9911],[51.11333,16.99171],[51.11322,16.99235],[51.11314,16.993],[51.11305,16.99364],[51.11296,16.99419],[51.11279,16.99454],[51.11276,16.99503],[51.11266,16.99548],[51.11254,16.99593],[51.1125,16.99642],[51.11253,16.99629],[51.11266,16.99569],[51.11274,16.99499],[51.11261,16.99442],[51.11241,16.99387],[51.11222,16.99338],[51.112,16.99372],[51.11182,16.99408],[51.1118,16.99414],[51.11185,16.99396],[51.11212,16.99357],[51.1124,16.99367],[51.11254,16.99426],[51.11272,16.99491],[51.11259,16.99569],[51.11248,16.9965],[51.11243,16.99731],[51.11224,16.99799],[51.11212,16.99843],[51.11204,16.99894],[51.11196,16.99942],[51.11188,16.99989],[51.1118,17.00035],[51.11169,17.00079],[51.11156,17.00121],[51.11153,17.00172],[51.11144,17.00225],[51.11132,17.00275],[51.11125,17.00325],[51.11113,17.00375],[51.111,17.00428],[51.11088,17.00475],[51.11076,17.0052],[51.11065,17.0057]],[[51.11052,17.00577],[51.11053,17.0061],[51.11048,17.00648],[51.11048,17.00697],[51.11073,17.00688],[51.11094,17.00695],[51.11086,17.00743],[51.11078,17.00787],[51.11071,17.00834],[51.1106,17.00882],[51.11052,17.00928],[51.11044,17.00974],[51.11035,17.01019],[51.11028,17.01065],[51.11019,17.01111],[51.11009,17.01165],[51.11,17.01222],[51.10991,17.01278],[51.10985,17.01332],[51.10972,17.01386],[51.10963,17.01442],[51.10954,17.01493],[51.10944,17.01539],[51.10935,17.01589],[51.10926,17.01638],[51.1092,17.01684],[51.10908,17.01729],[51.10895,17.01784],[51.10885,17.01845],[51.10876,17.01904],[51.10882,17.01948],[51.10861,17.02004],[51.10843,17.02055],[51.10835,17.021],[51.10846,17.02137],[51.10871,17.02159],[51.10896,17.02166],[51.10929,17.02186],[51.10969,17.02182],[51.1101,17.02171],[51.11045,17.02167],[51.11079,17.0216],[51.11115,17.02144],[51.11136,17.02106],[51.11159,17.02081],[51.11176,17.02032],[51.11189,17.01985],[51.11196,17.01938],[51.11203,17.01887],[51.11223,17.01834],[51.11234,17.01777],[51.11243,17.01713],[51.11249,17.01651],[51.11254,17.01592],[51.11256,17.01531],[51.11257,17.01481],[51.1126,17.01433],[51.11261,17.01384],[51.11259,17.01332],[51.11259,17.01282],[51.11259,17.01228],[51.1126,17.01168],[51.11263,17.01111],[51.11267,17.01055],[51.11267,17.00999],[51.11268,17.00938],[51.11269,17.00879],[51.11269,17.00829],[51.1127,17.00778],[51.11272,17.0073],[51.11279,17.00682],[51.11288,17.00629],[51.11296,17.00562],[51.1133,17.00534],[51.11355,17.00486],[51.11375,17.00438],[51.11395,17.00386],[51.11414,17.00335],[51.11433,17.00296],[51.11455,17.00259],[51.11478,17.00229],[51.115,17.00199],[51.11519,17.00157],[51.11545,17.00116],[51.11572,17.00074],[51.11604,17.00036],[51.1164,17.00002],[51.11673,16.99966],[51.11702,16.99938],[51.1173,16.9991],[51.11761,16.9989],[51.11786,16.99867],[51.11812,16.99838],[51.11835,16.998],[51.11857,16.99756],[51.11883,16.99714],[51.11916,16.99679],[51.11946,16.9964],[51.11983,16.99614],[51.12007,16.99568],[51.12027,16.9952],[51.12042,16.99477],[51.12064,16.99443],[51.12087,16.99409],[51.12104,16.99367],[51.12123,16.99327],[51.12139,16.9927],[51.12166,16.99221],[51.12188,16.99167],[51.1221,16.99111],[51.12233,16.99055],[51.12257,16.98993],[51.12277,16.98945],[51.12297,16.98905],[51.12316,16.98861],[51.12331,16.98819],[51.12348,16.98779],[51.12374,16.98721],[51.12398,16.9866],[51.12423,16.98598],[51.12443,16.98543],[51.12455,16.9848],[51.12476,16.98428],[51.1249,16.98383],[51.12502,16.9834],[51.12522,16.98298],[51.12542,16.98253],[51.12558,16.98214],[51.1255,16.98231],[51.12528,16.9828],[51.12508,16.98337],[51.12488,16.98369],[51.12485,16.98403],[51.12466,16.98454],[51.12448,16.98503],[51.12439,16.9855],[51.12425,16.98594],[51.12406,16.98636],[51.12389,16.98679],[51.12375,16.98724],[51.12355,16.9877],[51.12336,16.98796],[51.12318,16.98852],[51.12297,16.98909],[51.12272,16.98963],[51.1225,16.99016],[51.12232,16.99058],[51.12216,16.99098],[51.12198,16.99145],[51.1218,16.9919],[51.12162,16.99231],[51.12143,16.99271],[51.12111,16.99309],[51.12097,16.99374],[51.12073,16.99432],[51.12046,16.99483],[51.12023,16.99539],[51.12002,16.99582],[51.11982,16.99618],[51.11957,16.99654],[51.11933,16.99685],[51.11909,16.99715],[51.11885,16.99744],[51.11856,16.9978],[51.11823,16.99816],[51.11795,16.99857],[51.11766,16.99893],[51.11729,16.99924],[51.11692,16.99946],[51.11675,16.99965],[51.11659,16.99942],[51.11629,16.99916],[51.11601,16.99903],[51.11573,16.99897],[51.11536,16.99903],[51.11499,16.99884],[51.11461,16.9986],[51.11422,16.99847],[51.11381,16.99835],[51.11359,16.99817],[51.11332,16.99797],[51.11303,16.9979],[51.11276,16.99787],[51.11259,16.99824],[51.11251,16.99871],[51.11246,16.99917],[51.11233,16.99983],[51.11218,17.00055],[51.11205,17.00122],[51.11189,17.00202],[51.11176,17.00271],[51.11157,17.00329],[51.11147,17.00376],[51.11144,17.00424],[51.11142,17.00473],[51.11126,17.00516],[51.11116,17.0056],[51.11105,17.00603],[51.11098,17.00647],[51.11083,17.0068],[51.11059,17.00702],[51.1105,17.00665],[51.11058,17.00617],[51.1105,17.00582],[51.11018,17.00571],[51.11013,17.00574],[51.11019,17.00602],[51.11019,17.0059]],[[51.1124,17.03089],[51.11151,17.02989],[51.11107,17.0296],[51.11072,17.02951],[51.1104,17.02935],[51.11008,17.02918],[51.10991,17.02884],[51.11001,17.02826],[51.11008,17.02782],[51.1101,17.02744],[51.11027,17.02699],[51.11039,17.02686],[51.11038,17.02681],[51.11042,17.02674],[51.11045,17.02668],[51.11045,17.02668],[51.11045,17.02668],[51.11053,17.02646],[51.11082,17.02657],[51.11116,17.02662],[51.11148,17.0267],[51.11158,17.02628],[51.11149,17.0258],[51.1114,17.02531],[51.11143,17.02515],[51.11145,17.02487],[51.11131,17.02442],[51.11138,17.02395],[51.11181,17.02395],[51.11204,17.02426],[51.11228,17.02461],[51.11249,17.02489],[51.1127,17.02457],[51.11286,17.0245],[51.11296,17.02435],[51.11314,17.02419],[51.11347,17.02424],[51.11369,17.02405],[51.11396,17.02404],[51.11427,17.02418],[51.11457,17.02427],[51.11491,17.02441],[51.11522,17.02457],[51.11552,17.0246],[51.11571,17.02421],[51.11587,17.0237],[51.11605,17.02324],[51.11617,17.0228],[51.11632,17.02235],[51.11647,17.02189],[51.11659,17.02142],[51.11673,17.02099],[51.11678,17.02052],[51.11683,17.02],[51.11693,17.01951],[51.11704,17.01906],[51.11718,17.01862],[51.11732,17.01819],[51.11745,17.01771],[51.11756,17.01727],[51.11773,17.01683],[51.11788,17.01637],[51.11811,17.01604],[51.11833,17.01566],[51.11854,17.01529],[51.11874,17.01491],[51.11892,17.01457],[51.11869,17.01438],[51.1184,17.01422],[51.11847,17.01387],[51.11849,17.01356],[51.11816,17.01354],[51.11787,17.01349],[51.11755,17.01347],[51.11726,17.01335],[51.11695,17.01317],[51.11665,17.01302],[51.11635,17.01288],[51.11604,17.01286],[51.1159,17.01257],[51.11601,17.01215],[51.11592,17.01167],[51.11589,17.01134],[51.11578,17.01091],[51.11563,17.01074],[51.11539,17.01076]],[[51.11102,17.06084],[51.11092,17.06046],[51.11079,17.06001],[51.11076,17.05946],[51.11079,17.05897],[51.11067,17.05853],[51.1105,17.05811],[51.11039,17.05763],[51.11027,17.05717],[51.11012,17.05672],[51.11,17.05626],[51.10987,17.05581],[51.10975,17.0554],[51.10979,17.05491],[51.10978,17.05467],[51.10978,17.05465],[51.10973,17.05424],[51.10965,17.05378],[51.10958,17.0533],[51.10947,17.05282],[51.10937,17.05234],[51.10925,17.05186],[51.10913,17.05138],[51.10896,17.05097],[51.10873,17.05059],[51.10851,17.05024],[51.10836,17.04981],[51.10828,17.04938],[51.1086,17.04921],[51.10884,17.04905],[51.10907,17.04892],[51.1093,17.04877],[51.10958,17.04879],[51.10981,17.04865],[51.10996,17.04834],[51.11007,17.0479],[51.1102,17.04742],[51.11008,17.04702],[51.10981,17.04675],[51.10954,17.04648],[51.10928,17.04624],[51.10907,17.04589],[51.10905,17.04537],[51.10904,17.04487],[51.10901,17.04439],[51.10913,17.04399],[51.10941,17.0437],[51.10969,17.0434],[51.10984,17.04328],[51.10994,17.04287],[51.1101,17.04246],[51.11029,17.0422],[51.11041,17.04198],[51.11056,17.04159],[51.11055,17.0411],[51.11055,17.04081],[51.1106,17.04056],[51.11063,17.04001],[51.11063,17.03951],[51.11057,17.0392],[51.11057,17.03917],[51.11058,17.03905],[51.11058,17.03901],[51.11065,17.03887],[51.11065,17.03842],[51.11079,17.03791],[51.11079,17.0374],[51.11084,17.03688],[51.11095,17.03637],[51.11105,17.03586],[51.11113,17.03537],[51.11126,17.03493],[51.11137,17.03445],[51.11149,17.03398],[51.11157,17.03348],[51.11167,17.03299],[51.11179,17.03249],[51.11196,17.03206],[51.11212,17.03163],[51.11219,17.03122],[51.11235,17.03115]],[[51.11218,16.99871],[51.1122,16.99812],[51.11238,16.99746],[51.11241,16.99678],[51.11252,16.99613],[51.11262,16.99544],[51.11268,16.99478],[51.11293,16.99437],[51.11302,16.99366],[51.11313,16.99296],[51.11318,16.99252],[51.11314,16.9927],[51.11306,16.99317],[51.11301,16.99365],[51.11294,16.9941],[51.11279,16.99449],[51.11268,16.99481],[51.11263,16.99549],[51.1125,16.9962],[51.11243,16.99691],[51.11233,16.99768],[51.11214,16.99821],[51.11206,16.99866],[51.11196,16.99923],[51.11186,16.99981],[51.11174,17.00043],[51.11156,17.00105],[51.11145,17.00173],[51.11136,17.00216],[51.11128,17.00261],[51.11127,17.00305],[51.11116,17.00348],[51.11107,17.00396],[51.11092,17.00453],[51.11077,17.00513],[51.11062,17.00575],[51.11024,17.00579],[51.11009,17.00567],[51.11013,17.00559]],[[51.11074,17.00472],[51.11089,17.00439],[51.11104,17.00392],[51.11117,17.00339],[51.11124,17.00288],[51.11141,17.00239],[51.11143,17.00179],[51.11153,17.00117],[51.11172,17.00075],[51.11181,17.00022],[51.11191,16.9997],[51.11199,16.99913],[51.11207,16.99855],[51.11221,16.99801],[51.11238,16.99757],[51.11241,16.99703],[51.11246,16.99648],[51.11255,16.99597],[51.11264,16.99545],[51.11271,16.99492],[51.1128,16.99455],[51.11299,16.9941],[51.11307,16.99352],[51.11314,16.99295],[51.11324,16.99239],[51.1133,16.99191],[51.11322,16.99252],[51.11312,16.99319],[51.11301,16.99383],[51.11288,16.99443],[51.11256,16.9944],[51.11236,16.99381],[51.11212,16.99345],[51.11182,16.99398],[51.11194,16.99383],[51.11217,16.99348],[51.11234,16.99367],[51.11239,16.99411],[51.11255,16.99452],[51.11269,16.99494],[51.11245,16.99507],[51.11215,16.9951],[51.1119,16.99495]],[[51.05848,16.9988],[51.05838,16.99876],[51.05838,16.99876],[51.05838,16.99876],[51.05838,16.99876],[51.05825,16.99867],[51.05792,16.99843],[51.05755,16.99819],[51.05718,16.99798],[51.0568,16.99778],[51.05641,16.99768],[51.05604,16.9976],[51.05569,16.99757],[51.05535,16.99775],[51.05503,16.99763],[51.05474,16.99753],[51.05445,16.99741],[51.05416,16.99733],[51.05387,16.99724],[51.05358,16.99713],[51.05322,16.99702],[51.05283,16.99696],[51.05244,16.997],[51.05216,16.99735],[51.05194,16.99776],[51.05175,16.99824],[51.0516,16.99873],[51.0515,16.99927],[51.05136,16.99976],[51.05144,17.00017],[51.05145,17.00063],[51.05151,17.00107],[51.05166,17.00143],[51.0518,17.0018],[51.05193,17.00231],[51.05229,17.00257],[51.05264,17.00289],[51.05303,17.00301],[51.05341,17.00316],[51.05376,17.00343],[51.05408,17.00367],[51.05442,17.00384],[51.0547,17.00417],[51.05489,17.00421],[51.05513,17.00394],[51.05537,17.00395],[51.05562,17.00419],[51.05562,17.00459],[51.05582,17.00503],[51.05622,17.00511],[51.05657,17.0049],[51.05687,17.00482],[51.0572,17.0051],[51.05757,17.00527],[51.05792,17.00543],[51.05827,17.00537],[51.05846,17.00493],[51.0586,17.0047],[51.05867,17.00435],[51.05874,17.0039],[51.05884,17.00343],[51.05893,17.00297],[51.05904,17.00246],[51.05915,17.00184],[51.05942,17.00149],[51.05944,17.00089],[51.05935,17.00034],[51.05924,16.9998],[51.05905,16.99933],[51.05884,16.99897],[51.05857,16.9988],[51.05824,16.99865],[51.05796,16.99847],[51.05769,16.99828],[51.05741,16.99811],[51.05713,16.99794],[51.05686,16.9978],[51.05658,16.99772],[51.05629,16.99765],[51.05601,16.99758],[51.05573,16.99755],[51.05548,16.99776],[51.05522,16.99768],[51.05495,16.9976],[51.05462,16.99747],[51.05424,16.99733],[51.05389,16.99723],[51.05353,16.99712],[51.05316,16.99699],[51.0528,16.99696],[51.0525,16.99696],[51.05227,16.99721],[51.05205,16.99751],[51.05188,16.99787],[51.05175,16.99824],[51.05159,16.99868],[51.05151,16.99923],[51.05137,16.99972],[51.05145,17.00023],[51.05145,17.00076],[51.05158,17.00126],[51.05174,17.00169],[51.05185,17.0021],[51.05204,17.00244],[51.05232,17.00261],[51.05256,17.0028],[51.05287,17.00295],[51.05324,17.0031],[51.05359,17.00328],[51.05389,17.00353],[51.05419,17.00374],[51.0545,17.00396],[51.05479,17.00421],[51.05504,17.00404],[51.05526,17.00392],[51.05552,17.00409],[51.05564,17.00443],[51.05562,17.00483],[51.05586,17.00508],[51.05622,17.00514],[51.05656,17.00494],[51.05682,17.00481],[51.05714,17.00501],[51.05748,17.00518],[51.05775,17.00535],[51.05803,17.00543],[51.05823,17.00535],[51.05843,17.00508],[51.05858,17.00466],[51.05871,17.00423],[51.05879,17.00377],[51.05886,17.00332],[51.05895,17.00287],[51.05904,17.0024],[51.05911,17.00191],[51.05934,17.00158],[51.05945,17.00101],[51.05933,17.0004],[51.05923,16.99981],[51.05905,16.99933],[51.0588,16.99891],[51.05845,16.99871],[51.05808,16.99853],[51.05779,16.99831],[51.05748,16.99817],[51.05719,16.99801],[51.05691,16.99786],[51.05658,16.99774],[51.0562,16.99764],[51.05584,16.99754],[51.05551,16.99775],[51.05515,16.99768],[51.05482,16.99754],[51.05454,16.99743],[51.05424,16.99735],[51.05395,16.9973],[51.05368,16.99719],[51.0534,16.99711],[51.05307,16.99701],[51.05271,16.997],[51.0524,16.99711],[51.0521,16.99743],[51.0519,16.99785],[51.05174,16.99833],[51.05161,16.99872],[51.05153,16.99915],[51.05143,16.99956],[51.05141,16.99994],[51.05147,17.0004],[51.05147,17.00087],[51.0516,17.00125],[51.05177,17.00164],[51.05187,17.00205],[51.05212,17.00239],[51.05246,17.00267],[51.05278,17.00287],[51.05307,17.00298],[51.05335,17.00311],[51.05363,17.00329],[51.05389,17.00348],[51.05416,17.00366],[51.0545,17.00389],[51.0548,17.00419],[51.0551,17.0039],[51.05544,17.00399],[51.05566,17.00435],[51.05565,17.00486],[51.05589,17.00505],[51.05618,17.00511],[51.05645,17.00498],[51.05667,17.00474],[51.05692,17.00489],[51.05723,17.00507],[51.05758,17.00522],[51.05791,17.00539],[51.05829,17.0053],[51.05851,17.00485],[51.05865,17.0043],[51.05875,17.00376],[51.05885,17.00322],[51.05896,17.00267],[51.05906,17.00215],[51.05922,17.00166],[51.05942,17.00124],[51.05936,17.00063],[51.05927,17.00004],[51.05912,16.99952],[51.05888,16.99903],[51.0584,16.99876],[51.0582,16.99876],[51.05822,16.99874],[51.05821,16.99852],[51.05819,16.99812],[51.05798,16.99779],[51.05798,16.99741],[51.05809,16.99702],[51.05813,16.99678],[51.05814,16.99677],[51.05814,16.99677],[51.05814,16.99677],[51.05814,16.99677],[51.05814,16.99677],[51.05814,16.99677]],[[51.1106,17.00647],[51.11052,17.00688],[51.11074,17.00688],[51.11092,17.00692],[51.11088,17.00737],[51.11081,17.00787],[51.1107,17.00837],[51.11059,17.00889],[51.1105,17.00928],[51.11043,17.00972],[51.11036,17.01021],[51.11033,17.01066],[51.11024,17.0112],[51.11014,17.01185],[51.10999,17.01245],[51.10988,17.013],[51.10978,17.01358],[51.10971,17.01414],[51.10963,17.01465],[51.10951,17.01515],[51.1094,17.0157],[51.10932,17.01627],[51.10926,17.01673],[51.10915,17.01704],[51.10902,17.01753],[51.10894,17.01812],[51.10883,17.01872],[51.10878,17.01915],[51.1088,17.01943],[51.10869,17.0198],[51.10853,17.02027],[51.1084,17.02079],[51.10827,17.02136],[51.1082,17.02195],[51.10831,17.02244],[51.10859,17.0226],[51.10888,17.02269],[51.10923,17.02276],[51.1096,17.02289],[51.10989,17.0229],[51.11017,17.02278],[51.11051,17.02265],[51.1108,17.02276],[51.11091,17.02325],[51.11111,17.02361],[51.11134,17.02357],[51.11151,17.02324],[51.11157,17.02283],[51.1118,17.02238],[51.11209,17.02258],[51.11235,17.02292],[51.11266,17.02318],[51.113,17.02333],[51.11332,17.02358],[51.11367,17.02377],[51.11395,17.02396],[51.11426,17.02416],[51.11463,17.02428],[51.11503,17.02448],[51.11538,17.02469],[51.11565,17.0249],[51.11597,17.02509],[51.11633,17.0251],[51.11667,17.02503],[51.11684,17.02498],[51.11698,17.02486],[51.11716,17.02461],[51.11715,17.02418],[51.11709,17.02362],[51.11701,17.02303],[51.11702,17.0224],[51.11706,17.02181],[51.11709,17.02122],[51.11706,17.02064],[51.11711,17.02005],[51.1172,17.01951],[51.11734,17.01909],[51.11749,17.01865],[51.11762,17.01821],[51.11774,17.0178],[51.11789,17.01733],[51.11811,17.01684],[51.11836,17.01641],[51.11863,17.01601],[51.11877,17.01589],[51.1189,17.01552],[51.11922,17.01507],[51.11955,17.01467],[51.11985,17.01432],[51.12016,17.01404],[51.1205,17.01378],[51.12085,17.01359],[51.12118,17.01329],[51.1215,17.01303],[51.12182,17.01279],[51.122,17.01265],[51.1219,17.01272],[51.1218,17.01279],[51.1217,17.0127],[51.12145,17.01242],[51.12127,17.0124],[51.12104,17.01208],[51.12079,17.01171],[51.12051,17.01144],[51.12042,17.01114],[51.12044,17.01124],[51.1205,17.01141],[51.12077,17.01179],[51.12101,17.01221],[51.12124,17.0125],[51.12148,17.01251],[51.12169,17.01262],[51.12196,17.01283],[51.1223,17.01251],[51.12263,17.01222],[51.12289,17.01196],[51.12314,17.01178],[51.12347,17.01156],[51.12384,17.0113],[51.12415,17.01112],[51.12439,17.01107],[51.12471,17.01083],[51.12505,17.01058],[51.12537,17.01028],[51.12569,17.00992],[51.12593,17.00943],[51.12624,17.00915],[51.12655,17.00891],[51.12686,17.00871],[51.12707,17.00839],[51.12726,17.00797],[51.12741,17.00748],[51.12758,17.00709],[51.12769,17.00668],[51.1278,17.00625],[51.1279,17.00578],[51.12802,17.00541],[51.12815,17.00505],[51.12824,17.00464],[51.12833,17.00424],[51.12849,17.00398],[51.12875,17.00401],[51.12894,17.00416],[51.1291,17.00429],[51.12923,17.00459],[51.12933,17.00479],[51.1294,17.00483],[51.12959,17.00484],[51.12991,17.00468],[51.13005,17.00419],[51.13017,17.00371],[51.12997,17.00344],[51.12959,17.00333],[51.12923,17.00327],[51.12894,17.00351],[51.12877,17.00366],[51.12857,17.00336],[51.12856,17.00316],[51.12872,17.003],[51.12905,17.00303],[51.12944,17.0031],[51.12986,17.00319],[51.1302,17.00331],[51.13045,17.00328],[51.13063,17.00297],[51.1308,17.0025],[51.13092,17.00163],[51.13089,17.00107],[51.13085,17.00058],[51.13059,17.00024],[51.13026,17.00033],[51.13004,17.00053],[51.1298,17.00074],[51.12954,17.00089],[51.12926,17.00091],[51.12906,17.00069],[51.12895,17.00032],[51.12886,16.99977],[51.12877,16.99919],[51.12867,16.99868],[51.12854,16.99815],[51.12839,16.99768],[51.12823,16.99733],[51.1281,16.99685],[51.12797,16.99639],[51.1279,16.99589],[51.12783,16.99538],[51.12777,16.99492],[51.12762,16.99457],[51.12748,16.99467],[51.12741,16.99523],[51.12738,16.99573],[51.12732,16.99609],[51.12719,16.99651],[51.12709,16.99702],[51.12698,16.99742],[51.12688,16.99781],[51.12687,16.99837],[51.12687,16.99896],[51.12696,16.99949],[51.12703,16.99996],[51.12683,17.00018],[51.12652,17.00006],[51.12626,17.00008],[51.12598,17.00024],[51.12565,17.00045],[51.12528,17.00036],[51.12491,17.00029],[51.12454,17.00019],[51.12426,17.00011],[51.12404,17.00019],[51.12378,17.00025],[51.12394,17.00014],[51.12392,17.00002],[51.12364,16.99994],[51.12334,16.99975],[51.12303,16.99941],[51.12273,16.99901],[51.12252,16.99857],[51.12227,16.99812],[51.12201,16.9977],[51.1218,16.99738],[51.12158,16.9971],[51.12134,16.99683],[51.12106,16.99653],[51.12075,16.99616],[51.1204,16.99607],[51.12019,16.99642],[51.11999,16.99689],[51.11972,16.99731],[51.11938,16.99771],[51.11905,16.99809],[51.11874,16.99838],[51.11842,16.99868],[51.11816,16.99908],[51.11787,16.99942],[51.11752,16.99973],[51.11724,17.00008],[51.11694,17.00036],[51.11677,17.00025],[51.11662,17.00001],[51.11629,16.99976],[51.11591,16.99949],[51.11556,16.99921],[51.11521,16.99901],[51.1149,16.99883],[51.11463,16.99865],[51.11433,16.9985],[51.11401,16.99841],[51.1137,16.99838],[51.11349,16.99806],[51.11311,16.99791],[51.11273,16.99783],[51.11258,16.9982],[51.1125,16.99879],[51.11241,16.99934],[51.11232,16.99995],[51.11227,17.0005],[51.11217,17.00088],[51.11223,17.00131],[51.1125,17.00158],[51.11272,17.0019],[51.11269,17.00234],[51.11261,17.00287],[51.1125,17.0034],[51.11235,17.00393],[51.11221,17.00446],[51.11206,17.00491],[51.11197,17.00542],[51.11194,17.00579],[51.1116,17.00566],[51.11128,17.00548],[51.11091,17.00547],[51.1108,17.0059],[51.11069,17.00627],[51.11056,17.0067],[51.1103,17.00705],[51.11011,17.00723],[51.10987,17.0074],[51.10973,17.00764],[51.10994,17.00748],[51.11022,17.00718],[51.1104,17.00675],[51.11054,17.00622],[51.11049,17.0058],[51.11024,17.00569],[51.11028,17.00568],[51.11019,17.00573],[51.10991,17.00585]],[[51.10646,17.0156],[51.10647,17.01564],[51.10647,17.01555],[51.10648,17.01555],[51.10644,17.01554],[51.10643,17.01559],[51.10642,17.01583],[51.10619,17.01614],[51.10605,17.01645],[51.10596,17.01682],[51.10572,17.01711],[51.10546,17.01738],[51.10519,17.01768],[51.10494,17.01795],[51.10469,17.01816],[51.10443,17.01843],[51.10418,17.01864],[51.10394,17.01884],[51.10377,17.01858],[51.10371,17.01802],[51.10361,17.01756],[51.10348,17.01705],[51.10337,17.01657],[51.10322,17.01613],[51.10308,17.01565],[51.10297,17.01521],[51.10286,17.01475],[51.10273,17.01427],[51.10262,17.01378],[51.10254,17.01328],[51.10238,17.01275],[51.10222,17.01231],[51.10214,17.01184],[51.10204,17.01133],[51.10189,17.01089],[51.1018,17.01039],[51.10174,17.00988],[51.10154,17.00952],[51.10143,17.0089],[51.10137,17.00844],[51.1012,17.00799],[51.10092,17.00765],[51.10083,17.00705],[51.1009,17.00658],[51.1009,17.00635],[51.10083,17.00592],[51.10079,17.00544],[51.10069,17.00497],[51.10061,17.00464],[51.10059,17.00461],[51.10065,17.00488],[51.1007,17.0052],[51.10073,17.0054],[51.10078,17.00572],[51.1009,17.00613],[51.10103,17.00653],[51.10111,17.00693],[51.10123,17.00728],[51.10131,17.00766],[51.10137,17.00807],[51.10144,17.00847],[51.10155,17.00891],[51.10166,17.00937],[51.1018,17.0098],[51.10191,17.00979],[51.10218,17.0097],[51.10241,17.00953],[51.10263,17.00939],[51.10288,17.00926],[51.10313,17.00914],[51.10335,17.00904],[51.10357,17.00882],[51.10381,17.00872],[51.10403,17.00861],[51.10426,17.00855],[51.10448,17.00872],[51.10462,17.00909],[51.10466,17.00946],[51.10469,17.00984],[51.10473,17.01022],[51.10479,17.01059],[51.10486,17.01096],[51.10492,17.01134],[51.10499,17.0117],[51.10508,17.01207],[51.10518,17.01245],[51.10524,17.01281],[51.10529,17.01317],[51.10536,17.01356],[51.10542,17.01397],[51.10547,17.01435],[51.10556,17.0147],[51.10566,17.0151],[51.10575,17.01546],[51.10583,17.01581],[51.10592,17.01609],[51.10597,17.01603],[51.10623,17.01592],[51.10635,17.01573],[51.10645,17.01535]],[[51.11246,16.99707],[51.11239,16.99751],[51.11226,16.99794],[51.11215,16.99843],[51.11205,16.999],[51.11197,16.99945],[51.11189,16.99998],[51.11177,17.0005],[51.11165,17.00104],[51.11156,17.00153],[51.1115,17.00198],[51.1114,17.00241],[51.11129,17.00299],[51.1112,17.00354],[51.11107,17.00398],[51.11096,17.00441],[51.11086,17.00482],[51.11075,17.00524],[51.11064,17.00566],[51.11044,17.00584],[51.11021,17.00574]],[[51.11057,17.00614],[51.1105,17.00623],[51.11047,17.0067],[51.11032,17.00712],[51.11003,17.00739],[51.10972,17.00773],[51.10942,17.00828],[51.10916,17.00884],[51.10902,17.00938],[51.10887,17.00998],[51.10869,17.01061],[51.10849,17.01124],[51.10829,17.01187],[51.10818,17.01257],[51.10811,17.01319],[51.10811,17.01351],[51.10812,17.014],[51.10821,17.01443],[51.10821,17.01498],[51.10828,17.01547],[51.10834,17.01594],[51.10836,17.01666],[51.10848,17.0173],[51.10881,17.01739],[51.10902,17.0173],[51.10918,17.01708],[51.10927,17.01648],[51.10936,17.01589],[51.10946,17.0153],[51.10954,17.0147],[51.10965,17.01418],[51.10972,17.01371],[51.10983,17.01326],[51.1099,17.0128],[51.10998,17.01233],[51.11006,17.01188],[51.11015,17.01139],[51.11029,17.01079],[51.11041,17.01014],[51.11054,17.00942],[51.11063,17.00875],[51.11072,17.00819],[51.11081,17.00769],[51.11089,17.00725],[51.11086,17.00685],[51.11059,17.00697],[51.11049,17.00653],[51.11058,17.00604],[51.11037,17.00585],[51.11014,17.00578],[51.11001,17.00601],[51.11022,17.00633]],[[51.11029,17.00721],[51.10992,17.00742],[51.10961,17.00786],[51.10938,17.00829],[51.10914,17.00886],[51.10894,17.00952],[51.10874,17.01008],[51.10857,17.01071],[51.10843,17.01129],[51.10825,17.01185],[51.10817,17.0124],[51.10815,17.01288],[51.1081,17.0134],[51.10807,17.01407],[51.10805,17.01476],[51.10811,17.01545],[51.10823,17.01592],[51.10833,17.01643],[51.10838,17.01709],[51.10857,17.01746],[51.10897,17.01728],[51.10917,17.01694],[51.10924,17.01647],[51.1093,17.01598],[51.1094,17.01546],[51.10948,17.01497],[51.10957,17.01444],[51.10969,17.01382],[51.10978,17.01316],[51.10993,17.0125],[51.10999,17.01215],[51.11008,17.01171],[51.11018,17.01122],[51.11024,17.01074],[51.11034,17.01025],[51.11039,17.00977],[51.11053,17.00919],[51.11062,17.00855],[51.11074,17.00799],[51.11084,17.00752],[51.11093,17.00703],[51.11102,17.00658],[51.11112,17.00609],[51.11118,17.00547],[51.11128,17.00476],[51.11138,17.00402],[51.11152,17.00331],[51.11138,17.00318],[51.11132,17.00366],[51.11109,17.00393],[51.11092,17.0045],[51.11076,17.00514],[51.11058,17.0058],[51.11021,17.00573],[51.11012,17.00573]],[[51.11022,17.00558],[51.1105,17.00592],[51.1105,17.00619],[51.1105,17.00655],[51.11034,17.00708],[51.11005,17.00739],[51.10976,17.00765],[51.1095,17.00811],[51.10926,17.00855],[51.10908,17.00919],[51.10891,17.00972],[51.10875,17.01029],[51.1086,17.01084],[51.10843,17.01135],[51.10825,17.01184],[51.10816,17.01239],[51.10813,17.01302],[51.10813,17.01361],[51.10813,17.01419],[51.10808,17.01474],[51.10811,17.01525],[51.10815,17.01576],[51.10828,17.01613],[51.10832,17.01674],[51.10844,17.01731],[51.10877,17.0173],[51.10909,17.01707],[51.10921,17.01653],[51.1093,17.01607],[51.10939,17.01559],[51.10949,17.01508],[51.1096,17.0146],[51.1097,17.0139],[51.10984,17.01329],[51.11012,17.01319],[51.11032,17.01315],[51.11024,17.01317],[51.10989,17.01304],[51.10993,17.01249],[51.11005,17.01188],[51.11017,17.01118],[51.11029,17.01049],[51.11039,17.00988],[51.1105,17.00942],[51.11059,17.00887],[51.11068,17.00819],[51.11078,17.00768],[51.11089,17.00708],[51.11101,17.00644],[51.11113,17.00591],[51.1112,17.00539],[51.11128,17.00471],[51.11138,17.00406],[51.1115,17.00342],[51.11143,17.00304],[51.11132,17.00348],[51.11116,17.00381],[51.11102,17.00422],[51.1109,17.00465],[51.11078,17.00505],[51.11069,17.00549],[51.11053,17.00584],[51.11024,17.00576],[51.11007,17.00571],[51.11042,17.00593],[51.11018,17.00585]],[[51.11011,17.0063],[51.1099,17.00583],[51.11036,17.00577],[51.11052,17.00614],[51.11051,17.00655],[51.11037,17.00707],[51.11008,17.00736],[51.10979,17.00761],[51.10953,17.00803],[51.10934,17.00845],[51.10916,17.00887],[51.10902,17.00933],[51.10887,17.00981],[51.10874,17.01029],[51.10857,17.01077],[51.10842,17.01135],[51.1083,17.01192],[51.10818,17.01252],[51.10812,17.01312],[51.1081,17.01363],[51.10808,17.01415],[51.10804,17.01465],[51.10808,17.01517],[51.10814,17.01574],[51.1083,17.01613],[51.10844,17.01673],[51.10849,17.01729],[51.10867,17.01743],[51.10902,17.01728],[51.1092,17.01684],[51.10931,17.01625],[51.10941,17.01575],[51.10948,17.01526],[51.10957,17.01476],[51.10965,17.01431],[51.10975,17.01382],[51.10991,17.01329],[51.11013,17.01335],[51.10988,17.0131],[51.11,17.0124],[51.11009,17.01178],[51.1102,17.0111],[51.1103,17.0105],[51.1104,17.01001],[51.1105,17.0095],[51.11059,17.00904],[51.11067,17.00857],[51.11077,17.00803],[51.11089,17.00733],[51.11103,17.00667],[51.11115,17.00605],[51.11124,17.00546],[51.1113,17.00495],[51.11137,17.00445],[51.11147,17.00394],[51.11158,17.00334],[51.11137,17.00326],[51.11122,17.00379],[51.11099,17.00423],[51.11086,17.00472],[51.11077,17.00512],[51.11065,17.00556],[51.11047,17.00586],[51.11021,17.00576],[51.11008,17.0057],[51.11011,17.00598]]]},{"id":"longest","title":"Najdłuższy bieg","subtitle":"21.6 km · 2026-06-06","tracks":[[[51.13962,16.93958],[51.13945,16.9396],[51.13927,16.93963],[51.13909,16.93965],[51.13894,16.9397],[51.13879,16.93978],[51.13863,16.93989],[51.13847,16.94],[51.13832,16.94008],[51.13818,16.94019],[51.13802,16.94034],[51.13788,16.94049],[51.13773,16.94065],[51.13758,16.94081],[51.13751,16.941],[51.13749,16.94126],[51.13746,16.94151],[51.13745,16.94174],[51.13745,16.94196],[51.13747,16.94219],[51.13752,16.94239],[51.13761,16.94256],[51.13773,16.94269],[51.13785,16.9428],[51.13797,16.94295],[51.13805,16.94315],[51.1381,16.94338],[51.13811,16.94363],[51.1381,16.94387],[51.13808,16.94411],[51.13805,16.94436],[51.13802,16.94462],[51.13799,16.94486],[51.13795,16.94509],[51.1379,16.94534],[51.13785,16.94557],[51.13779,16.94581],[51.13773,16.94603],[51.13768,16.94625],[51.13764,16.94646],[51.13759,16.94666],[51.13753,16.94685],[51.13749,16.94704],[51.13742,16.94723],[51.13735,16.94743],[51.13728,16.94762],[51.1372,16.94781],[51.13712,16.94801],[51.13705,16.94823],[51.13697,16.94843],[51.13689,16.94864],[51.13681,16.94884],[51.13673,16.94905],[51.13664,16.94926],[51.13656,16.94948],[51.13649,16.9497],[51.1364,16.94991],[51.13632,16.95011],[51.13625,16.95031],[51.13618,16.95052],[51.13611,16.95074],[51.13601,16.95094],[51.13593,16.95113],[51.13585,16.95133],[51.13578,16.95153],[51.1357,16.95172],[51.13563,16.95189],[51.13556,16.95205],[51.13549,16.95222],[51.1354,16.9524],[51.1353,16.95256],[51.1352,16.95272],[51.13509,16.95289],[51.13497,16.95306],[51.13486,16.95323],[51.13475,16.95342],[51.13463,16.95361],[51.1345,16.95379],[51.13438,16.95398],[51.13425,16.95417],[51.13414,16.95436],[51.13403,16.95454],[51.13392,16.95472],[51.13381,16.95492],[51.1337,16.9551],[51.1336,16.95527],[51.1335,16.95542],[51.13341,16.95557],[51.13331,16.95572],[51.13322,16.95588],[51.13313,16.95605],[51.13304,16.95622],[51.13295,16.9564],[51.13287,16.95659],[51.1328,16.95681],[51.13272,16.95705],[51.13265,16.95729],[51.13258,16.95753],[51.13252,16.95777],[51.13248,16.95802],[51.13243,16.95828],[51.13237,16.95854],[51.13232,16.95879],[51.13227,16.95904],[51.13222,16.95927],[51.13217,16.95948],[51.13213,16.95969],[51.13209,16.9599],[51.13205,16.9601],[51.132,16.96032],[51.13196,16.96054],[51.13192,16.96075],[51.13188,16.96096],[51.13185,16.96115],[51.1318,16.96134],[51.13175,16.96154],[51.13171,16.96174],[51.13166,16.96195],[51.13161,16.96217],[51.13155,16.9624],[51.1315,16.96264],[51.13145,16.96287],[51.1314,16.96309],[51.13137,16.96334],[51.13132,16.96357],[51.13127,16.9638],[51.13122,16.96403],[51.13118,16.96428],[51.13114,16.96452],[51.13109,16.96474],[51.13103,16.96497],[51.13098,16.96519],[51.13093,16.9654],[51.13089,16.96561],[51.13084,16.96582],[51.1308,16.96604],[51.13075,16.96626],[51.1307,16.96648],[51.13066,16.9667],[51.13062,16.96692],[51.13057,16.96715],[51.13052,16.96739],[51.13045,16.96763],[51.13039,16.96787],[51.13033,16.96812],[51.13028,16.96836],[51.13022,16.96859],[51.13015,16.96884],[51.13007,16.9691],[51.13,16.96933],[51.12993,16.96956],[51.12986,16.9698],[51.12979,16.97002],[51.12971,16.97024],[51.12964,16.97046],[51.12957,16.97067],[51.1295,16.97086],[51.12944,16.97108],[51.12938,16.9713],[51.12932,16.9715],[51.12926,16.97169],[51.1292,16.97189],[51.12914,16.9721],[51.12907,16.97231],[51.12901,16.97254],[51.12894,16.97278],[51.12887,16.97302],[51.1288,16.97326],[51.12873,16.97351],[51.12865,16.97375],[51.12857,16.97399],[51.12849,16.97424],[51.12841,16.97447],[51.12834,16.97471],[51.12826,16.97494],[51.1282,16.97518],[51.12812,16.97544],[51.12805,16.97567],[51.12798,16.97588],[51.12792,16.97608],[51.12786,16.97629],[51.1278,16.97649],[51.12774,16.9767],[51.12767,16.9769],[51.12762,16.9771],[51.12756,16.9773],[51.1275,16.9775],[51.12741,16.97774],[51.12732,16.97798],[51.12724,16.97821],[51.12715,16.97844],[51.12706,16.97866],[51.12696,16.97889],[51.12687,16.97914],[51.12679,16.97939],[51.12671,16.97964],[51.12662,16.97989],[51.12653,16.98013],[51.12644,16.98036],[51.12636,16.98059],[51.12627,16.9808],[51.1262,16.98099],[51.12613,16.98118],[51.12605,16.98137],[51.12598,16.98156],[51.1259,16.98176],[51.12582,16.98195],[51.12574,16.98214],[51.12566,16.98233],[51.12557,16.98253],[51.12547,16.98274],[51.12537,16.98296],[51.12526,16.98318],[51.12516,16.98341],[51.12506,16.98365],[51.12497,16.98389],[51.12489,16.98414],[51.12481,16.9844],[51.12473,16.98466],[51.12466,16.98491],[51.12458,16.98516],[51.12451,16.98542],[51.12444,16.98566],[51.12436,16.98589],[51.12427,16.98609],[51.1242,16.98628],[51.12412,16.98646],[51.12404,16.98664],[51.12396,16.98684],[51.12389,16.98704],[51.12381,16.98723],[51.12373,16.98743],[51.12365,16.98764],[51.12357,16.98784],[51.12348,16.98808],[51.12338,16.98833],[51.12327,16.98857],[51.12317,16.98881],[51.12307,16.98904],[51.12298,16.98927],[51.12288,16.98951],[51.1228,16.98974],[51.12271,16.98995],[51.12262,16.99016],[51.12253,16.99037],[51.12244,16.99059],[51.12234,16.99082],[51.12226,16.99103],[51.12218,16.99122],[51.12211,16.99139],[51.12204,16.99157],[51.12197,16.99176],[51.12189,16.99195],[51.12181,16.99215],[51.12172,16.99235],[51.12164,16.99254],[51.12156,16.99275],[51.12148,16.99297],[51.12138,16.99321],[51.12128,16.99345],[51.12117,16.99369],[51.12107,16.99394],[51.12097,16.99418],[51.12086,16.99443],[51.12074,16.99467],[51.12062,16.9949],[51.1205,16.99512],[51.12038,16.99535],[51.12026,16.99557],[51.12014,16.99579],[51.12002,16.996],[51.11993,16.99619],[51.11983,16.99637],[51.11972,16.99653],[51.11962,16.99667],[51.11951,16.99682],[51.1194,16.99697],[51.11929,16.99712],[51.11918,16.99728],[51.11907,16.99745],[51.11895,16.99761],[51.11882,16.99776],[51.11868,16.99792],[51.11853,16.99809],[51.11837,16.99826],[51.11822,16.99843],[51.11808,16.99859],[51.11795,16.99876],[51.1178,16.99888],[51.11765,16.99901],[51.1175,16.99914],[51.11735,16.99927],[51.1172,16.99942],[51.11704,16.99957],[51.11689,16.99971],[51.11676,16.99987],[51.11663,17.00003],[51.11651,17.00018],[51.1164,17.00032],[51.11628,17.00044],[51.11615,17.00057],[51.11604,17.0007],[51.11592,17.00082],[51.1158,17.00099],[51.11567,17.00117],[51.11554,17.00137],[51.11542,17.00155],[51.1153,17.00176],[51.11518,17.00196],[51.11505,17.00216],[51.11492,17.00235],[51.1148,17.00256],[51.11467,17.00277],[51.11454,17.00297],[51.11441,17.00318],[51.11429,17.00339],[51.11417,17.0036],[51.11408,17.00378],[51.114,17.00397],[51.11391,17.00417],[51.11383,17.00436],[51.11376,17.00455],[51.11367,17.00474],[51.1136,17.00493],[51.11352,17.00512],[51.11344,17.00531],[51.11335,17.0055],[51.11324,17.00572],[51.11314,17.00595],[51.11305,17.0062],[51.11297,17.00645],[51.11289,17.0067],[51.11285,17.00698],[51.11283,17.00726],[51.11282,17.00754],[51.1128,17.00782],[51.11279,17.0081],[51.11277,17.00838],[51.11276,17.00864],[51.11275,17.00889],[51.11275,17.00913],[51.11275,17.00935],[51.11274,17.00956],[51.11274,17.00978],[51.11274,17.01],[51.11273,17.01022],[51.11272,17.01045],[51.11271,17.01066],[51.1127,17.01088],[51.11269,17.01112],[51.11269,17.01138],[51.11267,17.01167],[51.11266,17.01196],[51.11266,17.01225],[51.11266,17.01252],[51.11266,17.0128],[51.11266,17.0131],[51.11266,17.01339],[51.11266,17.01368],[51.11266,17.01395],[51.11264,17.01422],[51.11264,17.01449],[51.11263,17.01475],[51.11263,17.015],[51.11262,17.01522],[51.11261,17.01545],[51.1126,17.01567],[51.11259,17.01588],[51.11258,17.0161],[51.11256,17.01632],[51.11255,17.01654],[51.11253,17.01676],[51.11251,17.01699],[51.11249,17.01723],[51.11246,17.01748],[51.11245,17.01775],[51.11241,17.01801],[51.11235,17.01829],[51.11229,17.01856],[51.11223,17.01882],[51.11216,17.01907],[51.11211,17.01933],[51.11206,17.01959],[51.11199,17.01984],[51.11193,17.0201],[51.11187,17.02035],[51.11181,17.0206],[51.11174,17.02082],[51.11168,17.02103],[51.11163,17.02124],[51.11158,17.02146],[51.11153,17.02167],[51.11148,17.0219],[51.1114,17.02211],[51.11134,17.02232],[51.11127,17.02254],[51.1112,17.02277],[51.11111,17.02302],[51.11102,17.02328],[51.11096,17.02355],[51.11095,17.02383],[51.11096,17.02412],[51.11095,17.0244],[51.11087,17.02465],[51.11084,17.02491],[51.11079,17.02517],[51.11074,17.02543],[51.11067,17.02572],[51.11053,17.02598],[51.11037,17.02619],[51.1102,17.02633],[51.11002,17.02642],[51.10986,17.02649],[51.1097,17.02653],[51.10953,17.02658],[51.10936,17.02663],[51.10919,17.0267],[51.10902,17.02681],[51.10886,17.02696],[51.1087,17.02713],[51.10856,17.02729],[51.10847,17.02744],[51.1084,17.0276],[51.10831,17.02778],[51.10823,17.02798],[51.10816,17.0282],[51.10809,17.02843],[51.10804,17.02865],[51.10799,17.02886],[51.10793,17.02908],[51.1079,17.02931],[51.10788,17.02954],[51.10782,17.02979],[51.10775,17.03006],[51.10766,17.03032],[51.10759,17.03059],[51.10754,17.03085],[51.10748,17.03112],[51.10742,17.03138],[51.10737,17.03164],[51.1073,17.03188],[51.10719,17.03213],[51.10714,17.03238],[51.10711,17.03259],[51.1071,17.03284],[51.10712,17.03307],[51.1071,17.03329],[51.10709,17.03352],[51.10708,17.03374],[51.10709,17.03397],[51.10708,17.0342],[51.10708,17.03442],[51.10708,17.03465],[51.10708,17.0349],[51.10709,17.03517],[51.10709,17.03548],[51.10714,17.03578],[51.10723,17.03606],[51.10733,17.03633],[51.10745,17.0366],[51.10755,17.03686],[51.10764,17.03712],[51.10772,17.03743],[51.10773,17.03778],[51.10771,17.03813],[51.10766,17.03843],[51.10762,17.03865],[51.10762,17.0387],[51.10754,17.03955],[51.10752,17.03978],[51.1075,17.04001],[51.10748,17.04022],[51.10747,17.04044],[51.10744,17.04066],[51.10742,17.04092],[51.10739,17.04119],[51.10735,17.04148],[51.10732,17.04178],[51.10726,17.04206],[51.10723,17.04229],[51.10719,17.04251],[51.10716,17.04274],[51.10712,17.04297],[51.1071,17.0432],[51.10707,17.04341],[51.10705,17.04363],[51.10706,17.04387],[51.10708,17.04412],[51.10712,17.04439],[51.10717,17.04467],[51.10724,17.04495],[51.10731,17.04524],[51.10737,17.04553],[51.10743,17.04582],[51.10751,17.0461],[51.10759,17.04636],[51.10765,17.04662],[51.10771,17.04689],[51.10778,17.04718],[51.10786,17.04746],[51.10793,17.04771],[51.10799,17.04793],[51.10805,17.04815],[51.1081,17.04838],[51.10815,17.0486],[51.1082,17.04882],[51.10825,17.04904],[51.10831,17.04926],[51.10836,17.04947],[51.10841,17.04968],[51.10847,17.04989],[51.10856,17.05014],[51.10866,17.05038],[51.10876,17.05058],[51.10889,17.05076],[51.10901,17.05095],[51.10911,17.05116],[51.10919,17.0514],[51.10925,17.05166],[51.10931,17.05191],[51.10938,17.05218],[51.10944,17.05243],[51.10949,17.05268],[51.10954,17.05292],[51.1096,17.05315],[51.10966,17.05337],[51.10972,17.0536],[51.10975,17.05388],[51.1098,17.05416],[51.10984,17.0544],[51.10989,17.05464],[51.10994,17.05486],[51.10999,17.05508],[51.11003,17.0553],[51.1101,17.05552],[51.11016,17.05573],[51.1102,17.05593],[51.11024,17.05612],[51.11028,17.05631],[51.11033,17.05649],[51.11038,17.05665],[51.11041,17.05679],[51.11045,17.05697],[51.11051,17.05718],[51.11057,17.05737],[51.11063,17.05756],[51.11069,17.05776],[51.11073,17.05793],[51.11077,17.05809],[51.11082,17.05824],[51.11087,17.05841],[51.11093,17.0586],[51.11098,17.05881],[51.11103,17.05902],[51.11106,17.05925],[51.11109,17.05947],[51.11113,17.05968],[51.11115,17.05991],[51.11119,17.06017],[51.11123,17.06044],[51.11132,17.06069],[51.11142,17.06091],[51.11152,17.06114],[51.11161,17.06139],[51.1117,17.06164],[51.1118,17.0619],[51.11188,17.06216],[51.11195,17.0624],[51.11203,17.06264],[51.11211,17.06288],[51.1122,17.06312],[51.11226,17.06336],[51.11231,17.06359],[51.11237,17.06379],[51.11244,17.06399],[51.1125,17.06418],[51.11259,17.06436],[51.11272,17.06444],[51.11283,17.06431],[51.11279,17.06408],[51.11273,17.06387],[51.11266,17.06362],[51.11258,17.06336],[51.11249,17.0631],[51.11241,17.06284],[51.11234,17.06257],[51.11226,17.06231],[51.11219,17.06204],[51.11211,17.06178],[51.11206,17.06153],[51.11203,17.06127],[51.11208,17.06102],[51.11223,17.06087],[51.1124,17.06076],[51.11255,17.06071],[51.11269,17.06067],[51.11285,17.06063],[51.113,17.0606],[51.11314,17.06059],[51.11327,17.06058],[51.11342,17.06056],[51.11356,17.06051],[51.11371,17.06047],[51.11383,17.06041],[51.11396,17.06032],[51.11412,17.06033],[51.11429,17.06042],[51.11449,17.06035],[51.11464,17.0604],[51.11481,17.06051],[51.11498,17.06061],[51.11517,17.06065],[51.11533,17.06074],[51.11551,17.06082],[51.11571,17.06077],[51.11584,17.0606],[51.11591,17.06032],[51.11595,17.06005],[51.11598,17.05982],[51.11601,17.05958],[51.11603,17.05936],[51.11605,17.05914],[51.11607,17.05893],[51.11609,17.05872],[51.11611,17.05851],[51.11613,17.05828],[51.11613,17.05804],[51.11614,17.05779],[51.11617,17.05753],[51.1162,17.05727],[51.11624,17.05702],[51.11626,17.05676],[51.11628,17.05649],[51.11628,17.05621],[51.1163,17.05593],[51.11633,17.05566],[51.11636,17.05539],[51.11638,17.05509],[51.1164,17.0548],[51.11642,17.05453],[51.11644,17.05427],[51.11647,17.054],[51.11651,17.05374],[51.11655,17.05349],[51.11659,17.05327],[51.11664,17.05306],[51.11668,17.05285],[51.11671,17.05264],[51.11674,17.05242],[51.11677,17.0522],[51.1168,17.05197],[51.11682,17.05169],[51.11679,17.05141],[51.11675,17.05115],[51.11672,17.0509],[51.11673,17.05062],[51.11674,17.05034],[51.11675,17.05004],[51.11679,17.04974],[51.11682,17.04949],[51.11683,17.04923],[51.11684,17.04896],[51.11686,17.04868],[51.11689,17.04839],[51.11692,17.04814],[51.11695,17.04791],[51.11697,17.04768],[51.11698,17.04744],[51.11702,17.04722],[51.11706,17.047],[51.11708,17.04678],[51.1171,17.04656],[51.11713,17.04634],[51.11714,17.04609],[51.11714,17.04581],[51.11715,17.04555],[51.11716,17.04528],[51.11716,17.04498],[51.11716,17.04469],[51.11714,17.04441],[51.11711,17.04415],[51.1171,17.04389],[51.1171,17.04362],[51.1171,17.04334],[51.1171,17.04307],[51.1171,17.04279],[51.11711,17.0425],[51.11708,17.04224],[51.11695,17.04207],[51.11678,17.042],[51.11661,17.04194],[51.11646,17.04189],[51.11635,17.04184],[51.11624,17.04166],[51.11612,17.04151],[51.11601,17.0414],[51.11588,17.0413],[51.11572,17.04119],[51.11557,17.04106],[51.11541,17.04096],[51.11525,17.04089],[51.11509,17.04081],[51.11491,17.04072],[51.11473,17.04064],[51.11456,17.04058],[51.11437,17.04049],[51.1142,17.04036],[51.11406,17.04022],[51.11393,17.04008],[51.11379,17.03995],[51.11363,17.03986],[51.11346,17.03974],[51.11333,17.03957],[51.1133,17.03928],[51.11338,17.03906],[51.11347,17.03889],[51.11355,17.03871],[51.11362,17.03852],[51.11369,17.03834],[51.11375,17.03812],[51.11382,17.0379],[51.1139,17.03774],[51.11399,17.03758],[51.11409,17.0374],[51.1142,17.03722],[51.11434,17.03706],[51.11446,17.03686],[51.11453,17.03661],[51.11462,17.03637],[51.1147,17.03611],[51.11472,17.03582],[51.11472,17.03555],[51.11469,17.03529],[51.11462,17.03506],[51.11455,17.03486],[51.11447,17.03466],[51.1144,17.03445],[51.11433,17.03424],[51.11426,17.03403],[51.1142,17.03382],[51.11413,17.03362],[51.11406,17.03342],[51.114,17.03321],[51.11392,17.033],[51.11384,17.03275],[51.11377,17.03249],[51.1137,17.03224],[51.11361,17.032],[51.11352,17.03178],[51.11344,17.03154],[51.11337,17.03128],[51.11329,17.03101],[51.11321,17.03075],[51.11313,17.03049],[51.11308,17.03024],[51.11303,17.02999],[51.11298,17.02974],[51.11293,17.02949],[51.11292,17.02925],[51.1129,17.02902],[51.11286,17.02879],[51.11282,17.02858],[51.11278,17.02836],[51.11274,17.02816],[51.11269,17.02796],[51.11262,17.02778],[51.11252,17.02763],[51.11244,17.02748],[51.11235,17.02733],[51.11221,17.02717],[51.11203,17.02706],[51.11185,17.02698],[51.1117,17.02685],[51.11165,17.02659],[51.11165,17.02632],[51.11166,17.02604],[51.11161,17.02578],[51.11156,17.02553],[51.11152,17.02528],[51.11148,17.02503],[51.11145,17.02479],[51.1114,17.02458],[51.11136,17.02438],[51.11132,17.02418],[51.11129,17.02396],[51.11128,17.02371],[51.11127,17.02347],[51.11133,17.02327],[51.1114,17.02304],[51.11147,17.0228],[51.11153,17.02253],[51.1116,17.02227],[51.11168,17.02206],[51.11177,17.02184],[51.11186,17.0216],[51.11194,17.02135],[51.11202,17.0211],[51.11208,17.02084],[51.11216,17.02059],[51.11223,17.02035],[51.1123,17.02011],[51.11237,17.01986],[51.11242,17.01961],[51.11247,17.01937],[51.11251,17.01914],[51.11255,17.01893],[51.11259,17.01871],[51.11261,17.01848],[51.11264,17.01826],[51.11266,17.01804],[51.11268,17.01781],[51.11269,17.0176],[51.11271,17.01737],[51.11275,17.01713],[51.11279,17.01686],[51.11283,17.01658],[51.11283,17.0163],[51.11283,17.01602],[51.11284,17.01577],[51.11286,17.01552],[51.11287,17.01524],[51.11288,17.01496],[51.1129,17.01468],[51.11291,17.0144],[51.11291,17.01414],[51.11292,17.01389],[51.11294,17.01365],[51.11295,17.01342],[51.11298,17.01321],[51.11299,17.01299],[51.113,17.01277],[51.11301,17.01256],[51.11301,17.01234],[51.11303,17.01211],[51.11303,17.01188],[51.11303,17.01167],[51.11303,17.01144],[51.11305,17.0112],[51.11306,17.01091],[51.11307,17.01063],[51.11308,17.01035],[51.11308,17.01007],[51.11308,17.0098],[51.11309,17.00954],[51.11311,17.00926],[51.11311,17.009],[51.11313,17.00875],[51.11317,17.0085],[51.1132,17.00827],[51.11322,17.00804],[51.11322,17.00781],[51.11323,17.00759],[51.11324,17.00738],[51.11326,17.00717],[51.11328,17.00696],[51.11332,17.00673],[51.11338,17.00654],[51.11344,17.00635],[51.1135,17.00614],[51.11356,17.00596],[51.11364,17.00578],[51.11371,17.00563],[51.11377,17.00547],[51.11384,17.00531],[51.11391,17.00514],[51.11398,17.00497],[51.11404,17.0048],[51.11411,17.00465],[51.11419,17.00452],[51.11428,17.00439],[51.11435,17.0042],[51.11442,17.00401],[51.11449,17.00382],[51.11457,17.00365],[51.11464,17.00347],[51.11471,17.00328],[51.1148,17.00313],[51.11489,17.00297],[51.11497,17.00281],[51.11505,17.00264],[51.11514,17.00248],[51.11523,17.00233],[51.11531,17.00217],[51.11542,17.00199],[51.11556,17.00182],[51.11568,17.00163],[51.1158,17.00144],[51.11594,17.00127],[51.11607,17.00112],[51.11621,17.00097],[51.11636,17.00083],[51.1165,17.00069],[51.11665,17.00056],[51.1168,17.00045],[51.11694,17.00034],[51.11707,17.00018],[51.1172,17.00004],[51.11732,16.99991],[51.11742,16.99978],[51.11753,16.99964],[51.11765,16.99953],[51.11775,16.99942],[51.11785,16.99931],[51.11797,16.99918],[51.11807,16.99905],[51.11816,16.99897],[51.11825,16.99885],[51.11843,16.99863],[51.11858,16.99852],[51.1187,16.99836],[51.11885,16.99822],[51.11899,16.99806],[51.11913,16.99791],[51.11927,16.99777],[51.1194,16.99762],[51.11953,16.99746],[51.11966,16.9973],[51.11979,16.99711],[51.11992,16.99694],[51.12002,16.99676],[51.12009,16.99659],[51.12017,16.99642],[51.12026,16.99627],[51.12034,16.99613],[51.12043,16.99597],[51.12051,16.99581],[51.1206,16.99564],[51.12068,16.99548],[51.12076,16.99533],[51.12084,16.99517],[51.12092,16.99501],[51.12101,16.99484],[51.12111,16.99465],[51.12121,16.99441],[51.1213,16.9942],[51.12139,16.99397],[51.12149,16.99376],[51.1216,16.99356],[51.1217,16.99334],[51.12179,16.99309],[51.12188,16.99286],[51.12198,16.99264],[51.12207,16.99241],[51.12215,16.99222],[51.12222,16.99203],[51.12229,16.99185],[51.12235,16.99166],[51.12242,16.99148],[51.12249,16.99129],[51.12256,16.9911],[51.12263,16.99092],[51.1227,16.99073],[51.12278,16.99055],[51.12286,16.99036],[51.12294,16.99014],[51.12304,16.98991],[51.12314,16.9897],[51.12324,16.9895],[51.12334,16.98929],[51.12343,16.98906],[51.12353,16.98882],[51.12362,16.9886],[51.12371,16.9884],[51.12381,16.98819],[51.12389,16.98795],[51.12398,16.98769],[51.12406,16.98748],[51.12413,16.98731],[51.12421,16.98714],[51.12428,16.98696],[51.12436,16.98679],[51.12442,16.98662],[51.12449,16.98644],[51.12456,16.98626],[51.12463,16.9861],[51.12471,16.98595],[51.12476,16.98574],[51.12483,16.98547],[51.12492,16.98521],[51.125,16.98497],[51.12508,16.98474],[51.12515,16.98449],[51.12523,16.98423],[51.12532,16.98401],[51.12541,16.98379],[51.1255,16.98357],[51.12558,16.98335],[51.12568,16.98313],[51.12576,16.98291],[51.12583,16.98269],[51.1259,16.98251],[51.12599,16.98235],[51.12607,16.98219],[51.12614,16.98203],[51.12622,16.98188],[51.12629,16.98172],[51.12638,16.98156],[51.12646,16.9814],[51.12652,16.98121],[51.1266,16.98099],[51.12668,16.98075],[51.12677,16.98054],[51.12686,16.98033],[51.12694,16.98012],[51.12703,16.97991],[51.12712,16.97968],[51.12719,16.97944],[51.12727,16.9792],[51.12735,16.97897],[51.12743,16.97875],[51.12752,16.97854],[51.12759,16.97831],[51.12765,16.97806],[51.12772,16.97782],[51.1278,16.97761],[51.12786,16.97742],[51.12793,16.97723],[51.12799,16.97705],[51.12804,16.97686],[51.12809,16.97667],[51.12815,16.97648],[51.1282,16.97628],[51.12826,16.9761],[51.12831,16.97591],[51.12839,16.97577],[51.12844,16.97553],[51.12851,16.9753],[51.12858,16.97507],[51.12865,16.97483],[51.12871,16.97458],[51.12878,16.97433],[51.12884,16.97407],[51.12893,16.97387],[51.129,16.97362],[51.12907,16.97339],[51.12915,16.97318],[51.12922,16.97298],[51.12929,16.97281],[51.12935,16.97264],[51.1294,16.97244],[51.12945,16.97225],[51.1295,16.97205],[51.12955,16.97186],[51.1296,16.97167],[51.12966,16.97146],[51.12971,16.97125],[51.12976,16.97107],[51.12981,16.9709],[51.12986,16.97073],[51.12991,16.97055],[51.12997,16.97038],[51.13002,16.97019],[51.13007,16.97001],[51.13013,16.96982],[51.13019,16.96964],[51.13025,16.96946],[51.13031,16.96926],[51.13037,16.96904],[51.13044,16.9688],[51.13052,16.96856],[51.13059,16.96832],[51.13066,16.96811],[51.13072,16.96789],[51.13076,16.96769],[51.1308,16.96748],[51.13084,16.96726],[51.13088,16.96705],[51.13092,16.96685],[51.13097,16.96665],[51.13102,16.96644],[51.13107,16.96622],[51.13113,16.96597],[51.13118,16.96571],[51.13124,16.96548],[51.1313,16.96524],[51.13135,16.96499],[51.1314,16.96473],[51.13145,16.96448],[51.1315,16.96423],[51.13155,16.96397],[51.1316,16.96372],[51.13166,16.96348],[51.13171,16.96322],[51.13176,16.96296],[51.13182,16.9627],[51.13187,16.96244],[51.13192,16.96219],[51.13197,16.96194],[51.13202,16.96171],[51.13208,16.96148],[51.13212,16.96125],[51.13216,16.96103],[51.13218,16.96082],[51.13222,16.96063],[51.13226,16.96044],[51.13231,16.96025],[51.13235,16.96004],[51.13239,16.95984],[51.13244,16.95964],[51.13248,16.95945],[51.13252,16.95925],[51.13256,16.95905],[51.1326,16.95883],[51.13264,16.95858],[51.13267,16.95833],[51.13272,16.9581],[51.1328,16.95786],[51.13286,16.95762],[51.13293,16.95739],[51.133,16.95716],[51.13308,16.95693],[51.13317,16.9567],[51.13324,16.95649],[51.13332,16.9563],[51.13339,16.95613],[51.13347,16.95599],[51.13356,16.95585],[51.13365,16.95571],[51.13375,16.95556],[51.13385,16.9554],[51.13397,16.95522],[51.13409,16.95502],[51.13422,16.95481],[51.13435,16.95461],[51.13446,16.95442],[51.13458,16.95424],[51.1347,16.95405],[51.13482,16.95385],[51.13493,16.95367],[51.13502,16.9535],[51.13512,16.95335],[51.13521,16.95321],[51.1353,16.95305],[51.13538,16.95289],[51.13547,16.95271],[51.13557,16.95247],[51.13567,16.95223],[51.13576,16.952],[51.13586,16.95178],[51.13594,16.95154],[51.13603,16.9513],[51.13612,16.95107],[51.13621,16.95085],[51.13631,16.95064],[51.1364,16.95043],[51.13649,16.95019],[51.13657,16.94994],[51.13666,16.94972],[51.13675,16.94951],[51.13684,16.94929],[51.13692,16.94905],[51.137,16.94881],[51.13708,16.94858],[51.13719,16.94838],[51.13729,16.94813],[51.13738,16.94785],[51.13747,16.94757],[51.13755,16.9473],[51.13762,16.94704],[51.1377,16.94678],[51.13776,16.94651],[51.13783,16.94624],[51.13791,16.94597],[51.13797,16.94571],[51.13804,16.94546],[51.1381,16.94519],[51.13815,16.94493],[51.1382,16.94466],[51.13822,16.94438],[51.13825,16.94408],[51.13828,16.94379],[51.13831,16.94351],[51.13836,16.94324],[51.13848,16.943],[51.13863,16.94285],[51.1388,16.94272],[51.13898,16.94259],[51.13913,16.94241],[51.13922,16.94212],[51.13924,16.94179],[51.13923,16.94146],[51.13924,16.94112],[51.13925,16.94079],[51.13926,16.94045],[51.13929,16.94013],[51.1394,16.9399],[51.13959,16.9398],[51.1398,16.93984],[51.14,16.93991],[51.1402,16.94001],[51.14039,16.94019],[51.14037,16.94059],[51.1403,16.94087],[51.14026,16.94103],[51.14022,16.94119],[51.14017,16.94134],[51.14013,16.9415],[51.14008,16.94168],[51.14003,16.94185],[51.13998,16.94202],[51.13996,16.94219],[51.14002,16.94232],[51.14014,16.94239],[51.14023,16.94254],[51.1403,16.94266],[51.14036,16.94271],[51.14046,16.94276],[51.14058,16.94284],[51.14076,16.94309],[51.14108,16.94366],[51.14129,16.94378],[51.14135,16.9438],[51.14138,16.9438],[51.14138,16.9438],[51.14138,16.9438],[51.14138,16.94379],[51.14138,16.94379],[51.14138,16.9438],[51.1414,16.94386],[51.14142,16.94393],[51.14146,16.94401]]]},{"id":"Sława","title":"📍 Sława","subtitle":"2 biegów na wyjeździe","tracks":[[[51.88177,16.05303],[51.88166,16.0529],[51.8815,16.05296],[51.88117,16.05311],[51.88088,16.05353],[51.88062,16.05404],[51.88038,16.05465],[51.88017,16.05526],[51.87999,16.05587],[51.87989,16.05647],[51.87973,16.05714],[51.87956,16.05787],[51.87941,16.05848],[51.87943,16.05901],[51.87952,16.05966],[51.87962,16.06033],[51.87955,16.06095],[51.87941,16.06165],[51.87929,16.06229],[51.87926,16.06292],[51.87929,16.06364],[51.87922,16.0643],[51.87906,16.06497],[51.87868,16.06491],[51.87841,16.06502],[51.87847,16.0651],[51.87847,16.06554],[51.87844,16.0662],[51.87832,16.06687],[51.87823,16.06741],[51.87821,16.06797],[51.87788,16.06816],[51.87759,16.0683],[51.87769,16.06827],[51.87732,16.06832],[51.87707,16.06787],[51.87666,16.06794],[51.87616,16.06807],[51.87585,16.06789],[51.87573,16.0677],[51.87556,16.06817],[51.87532,16.06872],[51.87517,16.06933],[51.87482,16.06977],[51.87468,16.06925],[51.87468,16.06861],[51.87465,16.06799],[51.8747,16.06743],[51.87477,16.06689],[51.87463,16.06622],[51.87493,16.06605],[51.8751,16.06565],[51.87512,16.06518],[51.87513,16.06535],[51.87514,16.06585],[51.87514,16.06637],[51.87523,16.067],[51.87544,16.06739],[51.87579,16.06775],[51.87618,16.06808],[51.87661,16.06794],[51.87707,16.06787],[51.87722,16.06808],[51.87751,16.06819],[51.87781,16.06813],[51.87809,16.06835],[51.87837,16.06863],[51.87844,16.06803],[51.87862,16.06745],[51.87879,16.06688],[51.87892,16.06627],[51.87906,16.06564],[51.87909,16.06507],[51.87906,16.06476],[51.87918,16.06415],[51.87926,16.06363],[51.87921,16.06348],[51.87931,16.06296],[51.87932,16.06232],[51.87942,16.06179],[51.87952,16.06121],[51.87961,16.06056],[51.87966,16.05988],[51.87952,16.05923],[51.87933,16.05872],[51.87946,16.05821],[51.8796,16.05775],[51.87976,16.05712],[51.87991,16.05652],[51.88004,16.05589],[51.88023,16.05535],[51.88046,16.05475],[51.8807,16.05421],[51.8809,16.05363],[51.88103,16.0532],[51.88129,16.05279],[51.88147,16.05253],[51.88118,16.05285],[51.88096,16.05325],[51.8808,16.05374],[51.8811,16.05411],[51.88117,16.05451],[51.88095,16.05494],[51.88076,16.05546],[51.8807,16.05599],[51.88047,16.05646],[51.88024,16.05683],[51.88001,16.0574],[51.87976,16.05805],[51.87956,16.05864],[51.87956,16.05928],[51.87961,16.05989],[51.87953,16.06057],[51.87943,16.06124],[51.87938,16.06179],[51.87929,16.06234],[51.87925,16.06296],[51.87926,16.06353],[51.87919,16.06414],[51.87915,16.06468],[51.87909,16.0653],[51.879,16.06594],[51.87888,16.06656],[51.87869,16.06707],[51.87843,16.06763],[51.87816,16.06806],[51.87775,16.06825],[51.87744,16.06837],[51.87752,16.0688],[51.8778,16.06891],[51.87802,16.06852],[51.87823,16.06799],[51.87827,16.06741],[51.87832,16.06676],[51.8784,16.06615],[51.87841,16.06562],[51.87854,16.06506],[51.87885,16.065],[51.8791,16.0648],[51.87912,16.06416],[51.87919,16.06371],[51.8792,16.06328],[51.87915,16.06273],[51.87921,16.06208],[51.87935,16.06146],[51.87943,16.06082],[51.87956,16.06018],[51.87954,16.05951],[51.87941,16.05901],[51.8794,16.05845],[51.87957,16.0578],[51.87974,16.05719],[51.87989,16.0566],[51.88002,16.05602],[51.87983,16.05559],[51.88007,16.05563],[51.88034,16.05509],[51.88056,16.05447],[51.8808,16.05391],[51.88107,16.05336],[51.88143,16.05314],[51.88177,16.05312]],[[51.88152,16.05267],[51.88123,16.05319],[51.88092,16.05347],[51.88068,16.05401],[51.88045,16.05453],[51.88025,16.05508],[51.88004,16.05563],[51.87991,16.05626],[51.87976,16.0568],[51.87968,16.05732],[51.87952,16.05791],[51.87935,16.05851],[51.87942,16.05904],[51.87949,16.05964],[51.8795,16.06026],[51.87947,16.06085],[51.87937,16.06149],[51.87924,16.06205],[51.87917,16.06268],[51.87925,16.06331],[51.8792,16.06393],[51.87916,16.06457],[51.87895,16.06494],[51.87857,16.06486],[51.87837,16.06519],[51.87829,16.06574],[51.87833,16.06641],[51.87834,16.06696],[51.87836,16.06755],[51.87822,16.068],[51.87786,16.06816],[51.87751,16.06838],[51.8773,16.0682],[51.87717,16.0678],[51.87679,16.06781],[51.8764,16.06786],[51.87622,16.06786],[51.87593,16.06776],[51.87553,16.06736],[51.87516,16.06707],[51.87479,16.06687],[51.87473,16.06639],[51.87489,16.06591],[51.87506,16.06602],[51.87514,16.06652],[51.87536,16.06694],[51.87518,16.0671],[51.87477,16.06717],[51.87457,16.06762],[51.87452,16.06827],[51.87456,16.06896],[51.87479,16.06946],[51.87517,16.06932],[51.87533,16.06893],[51.87542,16.06832],[51.87564,16.068],[51.87593,16.06787],[51.87633,16.06799],[51.87673,16.06789],[51.87711,16.0678],[51.87729,16.06798],[51.87751,16.06822],[51.87788,16.06809],[51.87809,16.06825],[51.87789,16.06883],[51.87751,16.06897],[51.87739,16.06855],[51.87748,16.06821],[51.87784,16.06805],[51.87817,16.068],[51.8783,16.06748],[51.87832,16.06702],[51.87835,16.06645],[51.87832,16.0659],[51.87834,16.0656],[51.87843,16.06529],[51.87858,16.06495],[51.87893,16.06503],[51.87909,16.06469],[51.87911,16.0641],[51.87915,16.06342],[51.87914,16.06286],[51.87909,16.06247],[51.8788,16.06237],[51.87863,16.06229],[51.87899,16.06239],[51.87918,16.06224],[51.87933,16.06178],[51.87941,16.06119],[51.87954,16.06059],[51.87961,16.06001],[51.87948,16.05937],[51.87925,16.05903],[51.87885,16.0591],[51.87855,16.05919],[51.87838,16.05955],[51.87854,16.05933],[51.87889,16.05911],[51.87927,16.05897],[51.8794,16.05836],[51.87956,16.05776],[51.87972,16.0572],[51.87988,16.05661],[51.87998,16.05597],[51.88014,16.05543],[51.88036,16.05485],[51.88061,16.0543],[51.88088,16.05395],[51.88115,16.0542],[51.88121,16.05442],[51.88109,16.05475],[51.88091,16.05517],[51.88083,16.0556],[51.88088,16.05589],[51.88075,16.05557],[51.88043,16.05557],[51.8801,16.05555],[51.88033,16.05498],[51.88056,16.05445],[51.88078,16.05391],[51.88102,16.05334],[51.88128,16.05284],[51.88144,16.05256],[51.88125,16.0528],[51.88127,16.05314],[51.88161,16.05296],[51.88179,16.05314]]]},{"id":"Głogów","title":"📍 Głogów","subtitle":"2 biegów na wyjeździe","tracks":[[[51.6589,16.08099],[51.66004,16.08222],[51.66036,16.0824],[51.66066,16.0822],[51.66083,16.08159],[51.66095,16.08093],[51.66112,16.08038],[51.66118,16.07978],[51.66137,16.07918],[51.66166,16.07907],[51.66201,16.07936],[51.66224,16.07989],[51.66212,16.08013],[51.66188,16.08041],[51.66175,16.08098],[51.66207,16.08102],[51.66225,16.08042],[51.66255,16.08002],[51.66281,16.07949],[51.66299,16.07892],[51.66305,16.07838],[51.66273,16.07811],[51.66251,16.07766],[51.66225,16.07723],[51.66206,16.07687],[51.66172,16.07648],[51.66145,16.07681],[51.66133,16.07729],[51.66118,16.07761],[51.66083,16.07766],[51.66066,16.07832],[51.6606,16.07887],[51.6605,16.07941],[51.66029,16.08],[51.66037,16.08063],[51.66016,16.08099],[51.66,16.08165],[51.65975,16.08198],[51.65935,16.0818],[51.65901,16.08149],[51.65859,16.08123],[51.65854,16.08087],[51.65871,16.08037],[51.65889,16.07968],[51.65907,16.07916],[51.65927,16.07887],[51.65934,16.07819],[51.65962,16.07776],[51.65993,16.07765],[51.65992,16.07725],[51.65992,16.07666],[51.65998,16.07602],[51.66007,16.07544],[51.66035,16.07495],[51.66044,16.07467],[51.66046,16.07441],[51.66082,16.07418],[51.66116,16.07457],[51.66124,16.07513],[51.66083,16.07509],[51.66065,16.07544],[51.66062,16.07591],[51.66059,16.07541],[51.6606,16.07513]],[[51.6607,16.07531],[51.66061,16.07603],[51.66087,16.07625],[51.66107,16.0756],[51.6608,16.07529],[51.66059,16.07596],[51.66068,16.07675],[51.66063,16.07752],[51.66042,16.07818],[51.66028,16.07895],[51.66015,16.07971],[51.66005,16.08013],[51.65991,16.08074],[51.65973,16.08144],[51.6598,16.08204],[51.66021,16.0823],[51.66056,16.08228],[51.66031,16.08184],[51.66032,16.08114],[51.6604,16.08047],[51.66056,16.07976],[51.66067,16.07908],[51.66083,16.07845],[51.66102,16.07785],[51.66101,16.07727],[51.661,16.07666],[51.66127,16.07628],[51.66148,16.07664],[51.66137,16.0772],[51.66114,16.0777],[51.66077,16.0779],[51.66046,16.07827],[51.66,16.07803],[51.66006,16.07747],[51.66023,16.07682],[51.66041,16.07612],[51.66056,16.0755],[51.66066,16.07482],[51.66095,16.07447],[51.66125,16.07497],[51.66119,16.0755],[51.66101,16.07612],[51.66079,16.07679],[51.66066,16.07749],[51.66041,16.07811],[51.65994,16.07792],[51.66004,16.07751],[51.66019,16.07689],[51.66039,16.0762],[51.66058,16.07546],[51.66074,16.0748],[51.66098,16.07444],[51.66125,16.07487],[51.66112,16.07551],[51.66096,16.07622],[51.66072,16.07663],[51.66036,16.07649],[51.66047,16.07594],[51.66062,16.07525],[51.66091,16.07503],[51.661,16.07511],[51.66069,16.0751],[51.6609,16.07494]]]}],"scale":{"ascent_m":3376,"peaks":[{"name":"Śnieżka","h":1603,"x":2.1},{"name":"Rysy","h":2499,"x":1.4},{"name":"Mont Blanc","h":4809,"x":0.7},{"name":"Mount Everest","h":8849,"x":0.4}],"distance":{"closest":{"city":"Berlin","km":293},"cities":[{"city":"Berlin","km":293},{"city":"Paryż","km":1076},{"city":"Rzym","km":1080},{"city":"Londyn","km":1189},{"city":"Stambuł","km":1451},{"city":"Ateny","km":1553},{"city":"Madryt","km":1987},{"city":"Lizbona","km":2456},{"city":"Reykjavik","km":2669}]},"countries":[{"name":"Polska","flag":"🇵🇱","runs":31}],"weekday":[{"d":"Pon","runs":3,"km":13},{"d":"Wt","runs":4,"km":16},{"d":"Śr","runs":0,"km":0},{"d":"Czw","runs":1,"km":8},{"d":"Pt","runs":3,"km":9},{"d":"Sob","runs":12,"km":78},{"d":"Nie","runs":8,"km":35}],"hours":[{"h":0,"runs":0},{"h":1,"runs":0},{"h":2,"runs":0},{"h":3,"runs":0},{"h":4,"runs":0},{"h":5,"runs":0},{"h":6,"runs":0},{"h":7,"runs":0},{"h":8,"runs":0},{"h":9,"runs":0},{"h":10,"runs":4},{"h":11,"runs":5},{"h":12,"runs":1},{"h":13,"runs":3},{"h":14,"runs":0},{"h":15,"runs":1},{"h":16,"runs":4},{"h":17,"runs":3},{"h":18,"runs":2},{"h":19,"runs":2},{"h":20,"runs":1},{"h":21,"runs":3},{"h":22,"runs":1},{"h":23,"runs":1}]}};
+  const ZC = {Z1:'var(--z1)',Z2:'var(--z2)',Z3:'var(--z3)',Z4:'var(--z4)',Z5:'var(--z5)'};
+const $ = s => document.querySelector(s);
+
+/* ---------- reveal + chart triggers ---------- */
+const io = new IntersectionObserver((es)=>{
+  es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+},{threshold:.18});
+document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+
+/* ---------- hero count-up ---------- */
+function countUp(el,to,dur=1600,dec=0){
+  const t0=performance.now();
+  function tick(t){
+    const p=Math.min((t-t0)/dur,1); const e=1-Math.pow(1-p,3);
+    el.textContent=(to*e).toFixed(dec).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+    if(p<1)requestAnimationFrame(tick); else el.textContent=to.toLocaleString('pl').replace(/,/g,' ');
+  }
+  requestAnimationFrame(tick);
+}
+const L=DATA.lifetime;
+const heroObs=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){
+  countUp($('#km'),L.km); countUp($('#runs'),L.runs); countUp($('#hours'),L.hours);
+  heroObs.disconnect();
+}})});
+heroObs.observe($('.hero'));
+
+/* ---------- year volume bars ---------- */
+(function(){
+  const wrap=$('#yearBars'); const max=Math.max(...DATA.years.map(y=>y.km));
+  DATA.years.forEach(y=>{
+    const hot=y.km>=700;
+    const b=document.createElement('div'); b.className='bar'+(hot?' hot':'');
+    b.innerHTML=`<div class="fill"><span class="v">${Math.round(y.km)}</span></div><div class="yr">${y.year}</div>`;
+    b.title=`${y.year}: ${y.km} km · ${y.runs} biegów · ${y.pace||'—'}/km`;
+    wrap.appendChild(b);
+    b._h=(y.km/max*92);  // cap at 92% so the value label has headroom above the tallest bar
+  });
+  new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){
+    wrap.classList.add('in');
+    [...wrap.children].forEach((b,i)=>setTimeout(()=>b.querySelector('.fill').style.height=b._h+'%',i*70));
+    o.disconnect();
+  }})},{threshold:.3}).observe(wrap);
+})();
+
+/* ---------- monthly area chart ---------- */
+(function(){
+  const svg=$('#monthArea'); const W=1000,H=280,pad=6;
+  const m=DATA.months; const max=Math.max(...m.map(x=>x.km));
+  const x=i=>pad+i*(W-2*pad)/(m.length-1);
+  const y=v=>H-8-(v/max)*(H-26);
+  let line=`M ${x(0)} ${y(m[0].km)}`;
+  m.forEach((p,i)=>{if(i)line+=` L ${x(i)} ${y(p.km)}`;});
+  const area=line+` L ${x(m.length-1)} ${H} L ${x(0)} ${H} Z`;
+  svg.innerHTML=`
+    <defs>
+      <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FF8FD0" stop-opacity=".55"/>
+        <stop offset="1" stop-color="#FF8FD0" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="lg" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#7FD1FF"/><stop offset="1" stop-color="#E23A8F"/>
+      </linearGradient>
+    </defs>
+    <path class="area-path" d="${area}" fill="url(#ag)"/>
+    <path class="line-path" d="${line}" fill="none" stroke="url(#lg)" stroke-width="2.5"
+      stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`;
+})();
+
+/* ---------- zone polarization stacks ---------- */
+(function(){
+  const z=DATA.zones_by_year.filter(r=>Object.values(r.pct).some(v=>v>0));
+  const wrap=$('#zoneStack'), years=$('#zoneYears');
+  const maxHrs=Math.max(...z.map(r=>['Z1','Z2','Z3','Z4','Z5'].reduce((s,k)=>s+r[k],0)));
+  z.forEach(r=>{
+    const total=['Z1','Z2','Z3','Z4','Z5'].reduce((s,k)=>s+r[k],0);
+    const s=document.createElement('div'); s.className='stack';
+    s.innerHTML=['Z1','Z2','Z3','Z4','Z5'].map(k=>
+      `<div class="seg" style="height:${r.pct[k]}%;background:${ZC[k]}"></div>`).join('');
+    s.title=`${r.year}: `+['Z1','Z2','Z3','Z4','Z5'].map(k=>`${k} ${r.pct[k]}%`).join(' · ');
+    wrap.appendChild(s); s._h=(total/maxHrs*100);
+    const yl=document.createElement('div'); yl.className='yr'; yl.textContent=r.year; years.appendChild(yl);
+  });
+  $('#zoneLegend').innerHTML=[['Z1','spokój'],['Z2','łatwo'],['Z3','tempo'],['Z4','mocno'],['Z5','max']]
+    .map(([k,l])=>`<span><i class="dot" style="background:${ZC[k]}"></i>${k} · ${l}</span>`).join('');
+  new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){
+    [...wrap.children].forEach((s,i)=>setTimeout(()=>s.style.height=s._h+'%',i*70)); o.disconnect();
+  }})},{threshold:.3}).observe(wrap);
+})();
+
+/* ---------- pace line over volume ---------- */
+(function(){
+  const svg=$('#paceChart'); const W=1000,H=300,pad=30;
+  const ys=DATA.years; const maxKm=Math.max(...ys.map(y=>y.km));
+  const paces=ys.map(y=>y.pace_s).filter(Boolean);
+  const pMin=Math.min(...paces)-10,pMax=Math.max(...paces)+10;
+  const x=i=>pad+i*(W-2*pad)/(ys.length-1);
+  const bw=(W-2*pad)/ys.length*0.5;
+  // viewBox (1000 wide) scales down hard on phones, shrinking axis text to ~4px.
+  // On narrow screens use bigger labels and show every other year so it stays legible.
+  const narrow = (typeof innerWidth==='number' && innerWidth<560);
+  const yrFont = narrow?22:11, paceFont = narrow?24:12, dotR = narrow?4.5:3.5;
+  let bars='',line='',dots='';
+  ys.forEach((y,i)=>{
+    const h=(y.km/maxKm)*(H-50);
+    bars+=`<rect x="${x(i)-bw/2}" y="${H-30-h}" width="${bw}" height="${h}" rx="3" fill="#23232c"/>`;
+    if(!narrow || i%2===0)
+      bars+=`<text x="${x(i)}" y="${H-12}" fill="#8c8c9c" font-size="${yrFont}" text-anchor="middle" font-family="Hanken Grotesk">'${String(y.year).slice(2)}</text>`;
+    if(y.pace_s){
+      const py=20+(y.pace_s-pMin)/(pMax-pMin)*(H-80);
+      line+=(line?' L':'M')+` ${x(i)} ${py}`;
+      dots+=`<circle cx="${x(i)}" cy="${py}" r="${dotR}" fill="#7FD1FF"/>`;
+      if(y.year===2017||y.year===2026)
+        dots+=`<text x="${x(i)}" y="${py-12}" fill="#f5efe6" font-size="${paceFont}" text-anchor="middle" font-family="Anton">${y.pace}</text>`;
+    }
+  });
+  svg.innerHTML=`${bars}<path class="line-path" d="${line}" fill="none" stroke="#7FD1FF" stroke-width="2.5"
+    stroke-linejoin="round"/>${dots}`;
+})();
+
+/* ---------- gdzie: dom + Polska pin-map ---------- */
+(function(){
+  const P=DATA.poland; if(!P)return;
+  const total=DATA.lifetime.runs;
+  // LEVEL 0 — Wrocław home card (the big number lives in the scene HUD)
+  const hc=$('#homeCard');
+  if(hc) hc.innerHTML=`<div class="hbig">Tu zaczyna się <b>${Math.round(P.home.count/total*100)}%</b> Twoich biegów.</div>`;
+  // STEP 2 — Poland map with runner pins
+  const map=$('#plMap');
+  if(map){
+    const W=P.w,H=P.h,home={x:P.home.x,y:P.home.y};
+    const pl=P.places.map(p=>({...p,fx:p.x,fy:p.y}));
+    // gentle de-overlap: push pins apart (and off the home marker) without losing the geography
+    const MIN=70;
+    for(let it=0;it<90;it++) for(let i=0;i<pl.length;i++){
+      for(let j=i+1;j<pl.length;j++){
+        let dx=pl[j].fx-pl[i].fx,dy=pl[j].fy-pl[i].fy,d=Math.hypot(dx,dy)||1;
+        if(d<MIN){const k=(MIN-d)/2/d;pl[i].fx-=dx*k;pl[i].fy-=dy*k;pl[j].fx+=dx*k;pl[j].fy+=dy*k;}
+      }
+      let dx=pl[i].fx-home.x,dy=pl[i].fy-home.y,d=Math.hypot(dx,dy)||1;
+      if(d<MIN){const k=(MIN-d)/d;pl[i].fx+=dx*k;pl[i].fy+=dy*k;}
+      pl[i].fx=Math.max(38,Math.min(W-38,pl[i].fx));
+      pl[i].fy=Math.max(48,Math.min(H-34,pl[i].fy));
+    }
+    const sz=c=>20+Math.max(0,Math.min(1,(c-1)/24))*18;  // emoji 20..38, bigger = more runs
+    // names sit to the RIGHT of each pin (room in the empty east); spread them
+    // vertically so labels never overlap, with a thin leader back to the pin.
+    const LH=38;  // include a slot at home's y so no place label lands on the 🏠
+    const slots=pl.map(p=>({p,y:p.fy})).concat([{y:home.y}]).sort((a,b)=>a.y-b.y);
+    slots.forEach((s,i)=>{s.ly=i?Math.max(s.y,slots[i-1].ly+LH):s.y; if(s.p)s.p.ly=s.ly;});
+    const pins=pl.map(p=>{const r=sz(p.count),lx=p.fx+r*0.68+10;
+      return `<g class="pin">
+      <circle class="halo" cx="${p.fx}" cy="${p.fy}" r="${(r*0.9).toFixed(1)}"/>
+      <line class="leader" x1="${(p.fx+r*0.45).toFixed(1)}" y1="${p.fy}" x2="${(lx-5).toFixed(1)}" y2="${p.ly.toFixed(1)}"/>
+      <text class="emo" x="${p.fx}" y="${p.fy}" style="font-size:${r.toFixed(1)}px">🏃</text>
+      <text class="plbl" x="${lx.toFixed(1)}" y="${p.ly.toFixed(1)}"><tspan class="ln">${p.names.slice(0,2).join(' · ')}</tspan><tspan class="lc" dx="9">${p.count}</tspan></text>
+    </g>`;}).join('');
+    const homeMark=`<g class="pl-home">
+      <circle cx="${home.x}" cy="${home.y}" r="22" fill="var(--ink)" opacity="0.92"/>
+      <text class="plhome" x="${home.x}" y="${home.y}"
+        style="font-size:30px;text-anchor:middle;dominant-baseline:central">🏠</text></g>`;
+    // home drawn LAST so it never hides behind a place label
+    map.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img"
+        aria-label="Mapa kraju: miejsca biegów poza domem, podpisane nazwami">
+      <path class="pl-outline" d="${P.outline}"/>${pins}${homeMark}</svg>`;
+  }
+})();
+
+/* ---------- screenshot mode (only with ?shot) — instant, no scroll ---------- */
+function _shotMode(){
+  if(!location.search.includes('shot'))return;
+  $('.hero').style.minHeight='auto';
+  document.querySelectorAll('section').forEach(s=>s.style.padding='70px 0');
+  document.querySelectorAll('.rv,.area-wrap,section').forEach(e=>e.classList.add('in'));
+  setTimeout(()=>{
+    document.querySelectorAll('#yearBars .bar').forEach(b=>{const f=b.querySelector('.fill');if(b._h!=null)f.style.height=b._h+'%';});
+    document.querySelectorAll('#zoneStack .stack').forEach(s=>{if(s._h!=null)s.style.height=s._h+'%';});
+    document.querySelectorAll('.bars .b').forEach(b=>{const f=b.querySelector('.f');if(f&&b._h!=null)f.style.height=b._h+'%';});
+    document.querySelectorAll('.rfill,.zf').forEach(f=>f.style.width=f.dataset.w+'%');
+    const fmt=n=>n.toLocaleString('pl').replace(/,/g,' ');
+    $('#km').textContent=fmt(L.km);$('#runs').textContent=fmt(L.runs);
+    $('#hours').textContent=fmt(L.hours);
+    const q=new URLSearchParams(location.search);
+    const sl=q.get('slide');
+    if(window.__maps)window.__maps.activate(sl!==null?+sl:0);
+    const lv=q.get('lvl');
+    if(lv!==null&&window.__scene)window.__scene.go(+lv);
+  },80);
+}
+
+/* ---------- records (v3) ---------- */
+(function(){
+  const r=DATA.records; if(!r) return;
+  const ICON={route:'<svg viewBox="0 0 24 24"><path d="M9 19a3 3 0 0 1-3-3V8a3 3 0 0 0-3-3"/><path d="M15 5a3 3 0 0 1 3 3v8a3 3 0 0 0 3 3"/><circle cx="6" cy="5" r="1.6"/><circle cx="18" cy="19" r="1.6"/></svg>',
+    flame:'<svg viewBox="0 0 24 24"><path d="M12 3c1 4 5 5 5 9a5 5 0 0 1-10 0c0-2 1-3 2-4 0 1 1 2 2 2 0-3-1-5 1-7z"/></svg>',
+    goal:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>'};
+  const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  let h='';
+  const lk=r.longest.km, lw=(lk%1?lk.toFixed(1):lk);
+  h+=`<div class="rec-hero">
+    <div><div class="rec-lbl">${ICON.route} Najdłuższy bieg</div>
+      <div class="sub" style="color:var(--cream);opacity:.6;font-size:12.5px;margin-top:9px">${esc(r.longest.name)} · ${esc(r.longest.date)}</div></div>
+    <div class="num">${String(lw).split('.')[0]}<span class="u">${lw%1?'.'+String(lw).split('.')[1]:''} km</span></div></div>`;
+
+  if(r.race&&r.race.length){
+    h+='<div class="rec-cap">Twoje najlepsze czasy</div><div class="rec-race">';
+    h+=r.race.map(d=>`<div class="rtile"><div class="rec-lbl">${esc(d.label)}</div>
+      <div class="t">${d.time}</div><div class="pace">${d.pace} / km</div>`+
+      (d.pred?`<div class="pred">${ICON.flame}<span class="pv">prognoza ${d.pred.time}</span><span class="d">${d.pred.faster?'−':'+'}${d.pred.delta}</span></div>`:'')+
+      `</div>`).join('');
+    h+='</div>';
+  }
+  if(r.sprint&&r.sprint.length){
+    h+='<div class="rec-sprint">'+r.sprint.map(d=>`<div class="rtile"><div class="rec-lbl">${esc(d.label)}</div><div class="t">${d.time}</div><div class="pace">${d.pace}/km</div></div>`).join('')+'</div>';
+  }
+  if(r.marathon){
+    h+=`<div class="rec-goal">${ICON.goal}<span>Następny cel wg Twojej formy — <span style="color:var(--cream)">maraton</span> (prognoza)</span><span class="m">${r.marathon.time}</span></div>`;
+  }
+  const km=n=>n.toLocaleString('pl').replace(/,/g,' ');
+  h+=`<div class="rec-sup">
+    <div class="rtile"><div class="rec-lbl">Łącznie</div><div class="t">${km(r.totals.km)}<span class="u"> km</span></div><div class="sub">${km(r.totals.runs)} biegów</div></div>
+    <div class="rtile"><div class="rec-lbl">Rekord. tydzień</div><div class="t">${r.peak_week.km}<span class="u"> km</span></div></div>
+    <div class="rtile"><div class="rec-lbl">Najszybszy rok</div><div class="t">${r.fastest_year.pace}</div><div class="sub">${r.fastest_year.year}</div></div></div>`;
+  $('#rec-body').innerHTML=h;
+})();
+
+/* ---------- generic mini-bars (weekday / hours / distance) ---------- */
+function obsBars(wrap){
+  new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){
+    wrap.classList.add('in');
+    [...wrap.children].forEach((b,i)=>setTimeout(()=>{const f=b.querySelector('.f');if(f)f.style.height=b._h+'%';},i*40));
+    o.disconnect();
+  }})},{threshold:.25}).observe(wrap);
+}
+function simpleBars(sel,items,getVal,getLabel,hotFn){
+  const wrap=$(sel); const max=Math.max(...items.map(getVal),1);
+  items.forEach((it,i)=>{
+    const v=getVal(it); const b=document.createElement('div');
+    b.className='b'+(hotFn&&hotFn(it,i)?' hot':'');
+    b.innerHTML=`<div class="f"><span class="bv">${v||''}</span></div><div class="bl">${getLabel(it,i)}</div>`;
+    b.title=`${getLabel(it,i)}: ${v}`; wrap.appendChild(b); b._h=v/max*92;  // cap 92% → headroom for the value label
+  });
+  obsBars(wrap);
+}
+function renderHourRadar(sel,hours){
+  const cx=160,cy=160,r0=20,rmax=132;
+  const max=Math.max(...hours.map(h=>h.runs),1);
+  const ang=i=>(i/24)*2*Math.PI-Math.PI/2;        // 0h at top, clockwise
+  const rad=v=>r0+(v/max)*(rmax-r0);               // length = number of runs (linear)
+  const pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
+  let grid='';
+  [0.25,0.5,0.75,1].forEach(f=>grid+=`<circle cx="${cx}" cy="${cy}" r="${(r0+(rmax-r0)*f).toFixed(1)}" fill="none" stroke="rgba(245,239,230,.16)"/>`);
+  for(let i=0;i<24;i+=2){const[x,y]=pt(i,rmax);grid+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(245,239,230,.09)"/>`;}
+  const poly=hours.map((h,i)=>pt(i,rad(h.runs)).map(v=>v.toFixed(1)).join(',')).join(' ');
+  let dots='';hours.forEach((h,i)=>{if(h.runs>0){const[x,y]=pt(i,rad(h.runs));const big=i>=4&&i<=7;
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big?3.2:1.8}" fill="${big?'#7FD1FF':'#FF8FD0'}"/>`;}});
+  const lbl=[0,6,12,18].map(h=>{const[x,y]=pt(h,rmax+18);
+    return `<text x="${x.toFixed(0)}" y="${(y+4).toFixed(0)}" fill="#8c8c9c" font-size="12" text-anchor="middle" font-family="Anton">${h}:00</text>`;}).join('');
+  const peak=hours.reduce((a,b)=>b.runs>a.runs?b:a);
+  $(sel).innerHTML=`<svg viewBox="0 0 320 320"><defs>
+    <radialGradient id="radF" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#7FD1FF" stop-opacity=".55"/><stop offset="1" stop-color="#E23A8F" stop-opacity=".22"/></radialGradient></defs>
+    ${grid}
+    <polygon points="${poly}" fill="url(#radF)" stroke="#FF8FD0" stroke-width="2" stroke-linejoin="round"/>
+    ${dots}${lbl}
+    <text x="${cx}" y="${cy-2}" fill="#f5efe6" font-size="30" text-anchor="middle" font-family="Anton">${peak.h}:00</text>
+    <text x="${cx}" y="${cy+18}" fill="#8c8c9c" font-size="11" text-anchor="middle">${peak.runs} biegów</text>
+  </svg>`;
+}
+renderHourRadar('#hourChart',DATA.hours);
+simpleBars('#wdBars',DATA.weekday,w=>w.runs,w=>w.d);
+simpleBars('#distBars',DATA.dist_hist,d=>d.runs,d=>d.label,
+  (d)=>d.runs===Math.max(...DATA.dist_hist.map(x=>x.runs)));
+
+/* ---------- moon + zodiac (for fun) ---------- */
+(function(){
+  const fastest=DATA.moon.filter(m=>m.pace_s).sort((a,b)=>a.pace_s-b.pace_s)[0];
+  $('#moons').innerHTML=DATA.moon.map(m=>{
+    const [ic,...nm]=m.phase.split(' ');
+    return `<div class="moon${m===fastest?' best':''}"><div class="ph">${ic}</div>
+      <div class="nm">${nm.join(' ')}</div><div class="pc">${m.pace||'—'}</div>
+      <div class="rn">${m.runs} biegów${m===fastest?' · najszybciej ⚡':''}</div></div>`;
+  }).join('');
+  // sort by speed (fastest avg pace first); bar length = how fast (longer = faster)
+  const zz=DATA.zodiac.filter(s=>s.pace_s).sort((a,b)=>a.pace_s-b.pace_s);
+  const pMin=Math.min(...zz.map(s=>s.pace_s)), pMax=Math.max(...zz.map(s=>s.pace_s));
+  $('#zodiac').innerHTML=zz.map(s=>{
+    const king=s.sign===DATA.strongest_sign;
+    const w=pMax===pMin?100:38+(pMax-s.pace_s)/(pMax-pMin)*62;  // 38..100%, faster = wider
+    return `<div class="zrow${king?' king':''}"><div class="zn">${s.sign}${king?' 👑':''}</div>
+      <div class="ztrack"><div class="zf" data-w="${w.toFixed(0)}"></div></div>
+      <div class="zp">${s.pace}/km</div></div>`;
+  }).join('');
+  new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){
+    document.querySelectorAll('#zodiac .zf').forEach((f,i)=>setTimeout(()=>f.style.width=f.dataset.w+'%',i*60));
+    o.disconnect();
+  }})},{threshold:.2}).observe($('#zodiac'));
+})();
+
+/* ---------- map carousel on dark Leaflet tiles ---------- */
+(function(){
+  const LF=window.L;  // Leaflet — local `L` is the lifetime data, so use window.L
+  const maps=DATA.maps||[]; if(!maps.length||!LF||!LF.map)return;
+  const slides=$('#mapSlides'), dots=$('#mapDots'), counter=$('#mapCounter');
+  const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  slides.innerHTML=maps.map(m=>`<div class="slide">
+      <div class="lmap"></div><div class="grad"></div>
+      <div class="cap"><div class="t">${m.title}</div><div class="s">${m.subtitle}</div></div>
+    </div>`).join('');
+  dots.innerHTML=maps.map((_,i)=>`<button type="button" role="tab" data-i="${i}"
+      aria-label="Mapa ${i+1}: ${maps[i].title}" class="${i===0?'on':''}"><i></i></button>`).join('');
+  const slideEls=[...slides.children];
+  const built=[];
+  function build(i){
+    if(built[i])return built[i];
+    const m=maps[i], el=slideEls[i].querySelector('.lmap');
+    const map=LF.map(el,{preferCanvas:true,zoomControl:false,attributionControl:false,dragging:false,
+      scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,
+      touchZoom:false,zoomAnimation:false,fadeAnimation:false});
+    LF.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:18}).addTo(map);
+    const bounds=LF.latLngBounds([]);
+    m.tracks.forEach(t=>t.forEach(p=>bounds.extend(p)));
+    return built[i]={map,bounds,tracks:m.tracks,id:m.id,lines:null};
+  }
+  // Set the view FIRST, then add the route lines — adding polylines before the
+  // map has a stable view leaves the SVG renderer transform out of sync with
+  // the tiles (route ends up shifted by exactly the renderer offset).
+  function draw(i){
+    const rec=build(i);
+    setTimeout(()=>{
+      rec.map.invalidateSize(false);
+      rec.map.fitBounds(rec.bounds,{padding:[22,22],animate:false});
+      if(!rec.lines){
+        rec.lines=rec.tracks.map(t=>LF.polyline(t,{color:'#FF8FD0',
+          weight:rec.id==='home'?1.4:2.4,opacity:.95}).addTo(rec.map));
+      }
+      if(rec.drawn)return; rec.drawn=true;
+      if(RM){rec.lines.forEach((l,k)=>l.setLatLngs(rec.tracks[k]));return;}  // honour reduced-motion
+      // Canvas-friendly "drawing" animation: grow each polyline along its path.
+      const N=30; let s=0;
+      rec.lines.forEach(l=>l.setLatLngs([]));
+      const tick=()=>{
+        s++; const f=s/N;
+        rec.lines.forEach((l,k)=>{const t=rec.tracks[k];
+          l.setLatLngs(t.slice(0,Math.max(2,Math.ceil(t.length*f))));});
+        if(s<N)requestAnimationFrame(tick);
+        else rec.lines.forEach((l,k)=>l.setLatLngs(rec.tracks[k]));
+      };
+      requestAnimationFrame(tick);
+    },140);
+  }
+  const dotBtns=[...dots.querySelectorAll('button')];
+  let cur=-1;
+  function activate(i){
+    i=Math.max(0,Math.min(maps.length-1,i)); if(i===cur)return; cur=i;
+    slideEls.forEach((s,j)=>s.classList.toggle('active',j===i));
+    dotBtns.forEach((d,j)=>{const on=j===i;d.classList.toggle('on',on);d.setAttribute('aria-selected',on);});
+    counter.innerHTML=`<b>${i+1}</b> / ${maps.length}`;
+    draw(i);  // build + fit + draw the now-visible slide
+  }
+  const wrap=d=>(cur+d+maps.length)%maps.length;  // wrap-around so arrows are never dead
+  $('#mapPrev').onclick=()=>activate(wrap(-1));
+  $('#mapNext').onclick=()=>activate(wrap(1));
+  dotBtns.forEach(d=>d.onclick=()=>activate(+d.dataset.i));
+  // keyboard: arrows move between maps when the carousel is focused
+  slides.addEventListener('keydown',e=>{
+    if(e.key==='ArrowLeft'){e.preventDefault();activate(wrap(-1));}
+    else if(e.key==='ArrowRight'){e.preventDefault();activate(wrap(1));}
+  });
+  // touch swipe
+  let tx=null;
+  slides.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
+  slides.addEventListener('touchend',e=>{
+    if(tx===null)return; const dx=e.changedTouches[0].clientX-tx; tx=null;
+    if(Math.abs(dx)>40) activate(wrap(dx<0?1:-1));
+  },{passive:true});
+  // keep the visible map aligned after viewport resize / orientation change
+  let rt; addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{
+    const rec=built[cur]; if(!rec)return;
+    rec.map.invalidateSize(false); rec.map.fitBounds(rec.bounds,{padding:[22,22],animate:false});
+  },200);});
+  // activate the first slide once the carousel scrolls into view
+  new IntersectionObserver((es,o)=>{es.forEach(e=>{if(e.isIntersecting){activate(0);o.disconnect();}})},
+    {threshold:.25}).observe(slides);
+  window.__maps={activate,count:maps.length};
+})();
+
+/* ---------- scale / perspective ---------- */
+(function(){
+  const s=DATA.scale; if(!s)return;
+  const fmt=n=>n.toLocaleString('pl').replace(/,/g,' ');
+  const climbed=s.peaks.filter(p=>p.x>=1).sort((a,b)=>b.h-a.h)[0];
+  const next=s.peaks.find(p=>p.x<1);
+  $('#scaleElev').innerHTML=`<div class="lbl">Łączne przewyższenia</div>
+    <div class="huge">${fmt(s.ascent_m)} m</div>
+    <div class="cmp">⛰️ ${climbed?`wyżej niż <b>${climbed.name}</b> (${fmt(climbed.h)} m)`:''}${next?` — ${Math.round(next.x*100)}% drogi na ${next.name}`:''}</div>
+    <div class="rows">${s.peaks.map(p=>`<div class="r"><span>${p.name} · ${fmt(p.h)} m</span><b>×${p.x}</b></div>`).join('')}</div>`;
+  const c=s.distance.closest, home=(DATA.geo&&DATA.geo.home_city)||'dom';
+  $('#scaleDist').innerHTML=`<div class="lbl">Łączny dystans</div>
+    <div class="huge">${fmt(L.km)} km</div>
+    <div class="cmp">🧭 to trasa <b>${home} → ${c.city}</b> (${fmt(c.km)} km) pokonana w ${Math.round(L.km/c.km*100)}%</div>
+    <div class="rows">${s.distance.cities.map(x=>`<div class="r"><span>${home} → ${x.city} · ${fmt(x.km)} km</span><b>×${(L.km/x.km).toFixed(1)}</b></div>`).join('')}</div>`;
+})();
+
+/* ---------- countries highlight ---------- */
+(function(){
+  // "Świat" level = abroad, so drop the Polska baseline chip (it's levels 0-1)
+  const cs=((DATA.scale&&DATA.scale.countries)||[]).filter(c=>c.name!=='Polska');
+  if(!cs.length)return;
+  $('#countries').innerHTML=cs.map(c=>
+    `<div class="country foreign"><span class="fl">${c.flag}</span>
+      <div><div class="nm">${c.name}</div><div class="rn">${c.runs} ${c.runs===1?'bieg':'biegów'}</div></div></div>`
+  ).join('');
+})();
+
+/* ---------- gdzie: zoom-out scene (Wrocław -> Polska -> Świat) ---------- */
+(function(){
+  const stage=$('#sceneStage'); if(!stage)return;
+  const P=DATA.poland, total=DATA.lifetime.runs;
+  const foreign=((DATA.scale&&DATA.scale.countries)||[]).filter(c=>c.name!=='Polska');
+  const tabs=[...document.querySelectorAll('.lvltab')];
+  const lvls=[...stage.querySelectorAll('.lvl')];
+  const bull=document.querySelector('.bullseye');
+  const statEl=$('#sceneStat'), subEl=$('#sceneSub');
+  const HEAD=[
+    {n:P.home.count, s:'biegów z domu'},
+    {n:P.other_runs, s:`na wyjazdach · ${P.places.length} okolic`},
+    {n:foreign.length, s:foreign.length===1?'kraj poza Polską':'kraje poza Polską'},
+  ];
+  let cur=-1;
+  const setH=()=>{const on=lvls[cur]; if(on)stage.style.height=on.offsetHeight+'px';};
+  function go(i){
+    i=Math.max(0,Math.min(2,i)); if(i===cur)return; cur=i;
+    tabs.forEach(t=>{const on=+t.dataset.lvl===i;t.classList.toggle('on',on);t.setAttribute('aria-selected',on);});
+    lvls.forEach((l,j)=>l.classList.toggle('on',j===i));
+    bull.setAttribute('class','bullseye l'+i);  // SVG className is read-only
+    statEl.textContent=HEAD[i].n; subEl.textContent=HEAD[i].s;
+    requestAnimationFrame(setH);
+  }
+  tabs.forEach(t=>t.onclick=()=>go(+t.dataset.lvl));
+  document.querySelector('.lvltabs').addEventListener('keydown',e=>{
+    if(e.key==='ArrowLeft'){e.preventDefault();go(cur-1);}
+    else if(e.key==='ArrowRight'){e.preventDefault();go(cur+1);}
+  });
+  let rt; addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(setH,160);});
+  go(0);
+  setTimeout(setH,300); setTimeout(setH,900);
+  window.__scene={go};
+})();
+
+/* ---------- dynamic copy — keeps inline prose numbers in sync with the data
+   so a data refresh never leaves stale figures in the text ---------- */
+(function(){
+  const ky=y=>{const r=DATA.years.find(x=>x.year===y);return r?Math.round(r.km):0;};
+  document.querySelectorAll('[data-km]').forEach(el=>{el.textContent=ky(+el.dataset.km);});
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  // geo labels (home city / country) come from the data — no hardcoded place
+  const g=DATA.geo||{};
+  set('tab-home',g.home_city); set('tab-country',g.country); set('tab-flag',g.country_flag);
+  // when-phrase from the last run date
+  const MON=['stycznia','lutego','marca','kwietnia','maja','czerwca','lipca','sierpnia',
+    'września','października','listopada','grudnia'];
+  const p=(DATA.lifetime.last||'').split('-').map(Number), mm=p[1], dd=p[2];
+  if(mm) set('c-when',(dd<=10?'początek':dd<=20?'połowa':'koniec')+' '+MON[mm-1]);
+  // first / last year drive the rest (works for any athlete's span)
+  const yrs=DATA.years||[]; const first=yrs[0]&&yrs[0].year, last=yrs.length&&yrs[yrs.length-1].year;
+  const z=(DATA.zones_by_year||[]).find(x=>x.year===last);
+  if(z&&z.pct) set('z-easy',(z.pct.Z1||0)+(z.pct.Z2||0));
+  if(first&&ky(first)) set('p-mult',Math.max(2,Math.floor(ky(last)/ky(first))));
+  const lg=DATA.records&&DATA.records.longest; if(lg) set('o-longest',Math.round(lg.km));
+})();
+
+_shotMode();
+</script>
+</body>
+</html>
