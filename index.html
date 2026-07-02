@@ -69,8 +69,32 @@
   @keyframes glnum{0%,93%,100%{filter:none;transform:none}
     94%{filter:drop-shadow(3px 0 var(--a2)) drop-shadow(-3px 0 var(--a1));transform:translateX(2px)}
     95%{transform:translateX(-2px)}96%{filter:none;transform:none}}
+
+  /* the maze-figure icon (carved-out-of-the-maze silhouette), scattered around */
+  .figsym{position:absolute;width:0;height:0;overflow:hidden}
+  .figdecor{position:fixed;z-index:0;pointer-events:none;opacity:.07;fill:var(--a2);
+    animation:figflick 11s steps(1) infinite}
+  .figdecor.f1{top:11%;left:2.5%;width:64px;transform:rotate(-8deg)}
+  .figdecor.f2{bottom:9%;left:6%;width:50px;fill:var(--a1);transform:rotate(7deg);animation-delay:3s}
+  .figdecor.f3{top:46%;right:3.5%;width:58px;fill:var(--a1);transform:rotate(4deg);animation-delay:6s}
+  .figdecor.f4{bottom:14%;right:11%;width:44px;transform:rotate(-6deg);animation-delay:1.5s}
+  @keyframes figflick{0%,90%,100%{opacity:.07;filter:none}
+    91%{opacity:.14;filter:drop-shadow(2px 0 var(--a1)) drop-shadow(-2px 0 var(--a2))}
+    93%{opacity:.03}95%{opacity:.11}97%{opacity:.05}}
+  .figbig{position:absolute;right:4%;top:8%;width:min(26vw,150px);opacity:.16;fill:var(--a2);
+    filter:drop-shadow(0 0 12px rgba(255,143,208,.5));animation:figflick 8s steps(1) infinite}
+  /* a glitch tear-bar that sweeps the screen once in a while */
+  .glitchbar{position:fixed;left:0;width:100%;height:3px;z-index:2;pointer-events:none;opacity:0;
+    mix-blend-mode:screen;background:linear-gradient(90deg,transparent,var(--a2),var(--a1),transparent);
+    animation:tearbar 8s infinite}
+  @keyframes tearbar{0%,86%,100%{opacity:0;top:22%}
+    88%{opacity:.55;top:36%}89%{opacity:0;top:55%}91%{opacity:.45;top:64%}
+    92%{opacity:0;top:78%}94%{opacity:.5;top:47%}95%{opacity:0}}
+  .scan{animation:scandrift 6s linear infinite}
+  @keyframes scandrift{0%{background-position:0 0}100%{background-position:0 3px}}
   @media(prefers-reduced-motion:reduce){
-    .bander{animation:none}.glitch::before,.glitch::after{display:none}.gl-num{animation:none}}
+    .bander,.gl-num,.figdecor,.figbig,.glitchbar,.scan{animation:none}
+    .glitch::before,.glitch::after{display:none}.glitchbar{display:none}}
 
   main{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 24px;
     display:flex;flex-direction:column}
@@ -413,6 +437,17 @@
   <circle cx="134" cy="250" r="4"/><circle cx="154" cy="250" r="4"/><circle cx="182" cy="250" r="4"/>
 </svg>
 <div class="scan" aria-hidden="true"></div>
+<!-- the maze-figure icon: a blocky silhouette "carved out of the maze", reused around -->
+<svg class="figsym" aria-hidden="true"><defs><g id="mzfig">
+  <rect x="46" y="0" width="28" height="42"/><rect x="6" y="40" width="108" height="36"/>
+  <rect x="30" y="74" width="66" height="40"/><rect x="30" y="110" width="26" height="22"/>
+  <rect x="70" y="110" width="26" height="22"/>
+</g></defs></svg>
+<svg class="figdecor f1" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
+<svg class="figdecor f2" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
+<svg class="figdecor f3" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
+<svg class="figdecor f4" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
+<div class="glitchbar" aria-hidden="true"></div>
 <main>
 
   <!-- HERO -->
@@ -431,16 +466,20 @@
   </section>
 
   <!-- MANIFEST — simulation / choice theme -->
-  <section id="manifest" style="order:1">
+  <section id="manifest" style="order:1;position:relative">
+    <svg class="figbig" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
     <div class="kicker rv">// rozdział_00 — wybór_ścieżki.exe</div>
     <h2 class="rv"><span class="glitch" data-text="Sama wybierasz">Sama wybierasz</span><br>ścieżkę.</h2>
     <p class="lead rv d1">Jest taka teoria, że wszystko to symulacja, a my tylko klikamy w gotowe warianty.
       Ty się z nią nie zgadzasz — i masz dowód. <b>Każdy z tych 31 biegów to była decyzja:</b>
       wyjść albo zostać, iść dalej albo się poddać. Za każdym razem klikałaś „dalej".</p>
-    <p class="lead rv d2" style="margin-top:16px">To nie gra wybrała Twoją trasę. Ty wybrałaś —
-      i to, co miało być „tylko formą na trzydziestkę", zaczęło <b>przepisywać kod</b> reszty. 🕹️</p>
-    <div class="edu rv">🌀 <b>Efekt Bandersnatch.</b> Na każdym rozgałęzieniu była łatwiejsza opcja.
-      Nie brałaś jej. I dlatego ta historia w ogóle istnieje.</div>
+    <p class="lead rv d2" style="margin-top:16px">Wyobraź sobie labirynt — ściany, ślepe zaułki, tysiąc
+      powodów, żeby zawrócić. Większość w nim zostaje. Ty przeszłaś na drugą stronę i wyszłaś z niego
+      w konkretnym kształcie: <b>biegaczki</b>. To nie gra narysowała Twoją trasę — narysowałaś ją sama,
+      a „tylko forma na trzydziestkę" zaczęła <b>przepisywać kod</b> reszty. 🕹️</p>
+    <div class="edu rv">🌀 <b>Efekt Bandersnatch.</b> Na każdym rozgałęzieniu była łatwiejsza opcja —
+      zostać, odpuścić, „jutro". Nie brałaś jej. Wybór po wyborze wyrzeźbił Cię z labiryntu.
+      I dlatego ta historia w ogóle istnieje.</div>
   </section>
 
   <!-- VOLUME BY YEAR — hidden: only one season (2026), a year-by-year chart says nothing -->
@@ -464,13 +503,15 @@
       w której z nikąd stałaś się kimś, kto biega półmaratony.</p>
     <div class="area-wrap rv"><svg id="monthArea" viewBox="0 0 1000 280" preserveAspectRatio="none"></svg></div>
     <div class="edu rv">🌱 <b>Tak wygląda „od zera".</b> W styczniu i lutym Cię tu nie było — start to marzec.
+      Nikt Ci nie obiecał, że pójdzie łatwo — po prostu wychodziłaś raz za razem, aż z „może kiedyś"
+      zrobiło się „to już jestem ja".
       A do czerwca ta krzywa ani razu nie wróciła do zera. To nie zryw, to nowy nawyk.</div>
   </section>
 
   <!-- ZONES -->
   <section id="zones" style="order:7">
     <div class="kicker rv">Rozdział 6 — serce</div>
-    <h2 class="rv">Serce na<br>maksa</h2>
+    <h2 class="rv"><span class="glitch" data-text="Serce na">Serce na</span><br>maksa</h2>
     <p class="lead rv d1">Rozkład czasu w strefach tętna. U większości początkujących królują strefy spokoju —
       u Ciebie odwrotnie: <b>71% czasu w Z4 i Z5</b>, czyli mocno i bardzo mocno.
       „Chyba lubię, jak mi serce rozrywa klatkę" — Twoje słowa, nie moje. ❤️‍🔥</p>
@@ -563,7 +604,7 @@
   <!-- WHEN -->
   <section id="when" style="order:5">
     <div class="kicker rv">Rozdział 4 — kiedy</div>
-    <h2 class="rv">Nigdy o świcie</h2>
+    <h2 class="rv"><span class="glitch" data-text="Nigdy o świcie">Nigdy o świcie</span></h2>
     <p class="lead rv d1">Godzina startu, czas lokalny. Zero porannych zrywów — pierwszy bieg dnia
       łapiesz najczęściej koło <b>11:00</b>, a resztę rozrzucasz na popołudnia, wieczory,
       a czasem i <b>noc</b> („Nocne bieganie" nie wzięło się znikąd). Dzień? <b>Sobota</b> rządzi.</p>
