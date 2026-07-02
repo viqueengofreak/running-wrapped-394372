@@ -109,8 +109,10 @@
   /* photo is defined once as --photo (injected at build); both frames read it */
   .finish-img{width:100%;height:540px;background:var(--photo) center 32%/cover no-repeat;display:block}
   /* hero: the photo "decodes" into being — Matrix-style materialize + occasional glitch */
-  .heroshot{position:relative;width:min(52vw,208px);border-radius:var(--r-lg);overflow:hidden;
-    border:1px solid rgba(255,143,208,.4);box-shadow:0 14px 44px rgba(0,0,0,.55);margin-top:34px}
+  .heroshot{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:3;
+    width:min(30vw,240px);border-radius:var(--r-lg);overflow:hidden;
+    border:1px solid rgba(255,143,208,.4);box-shadow:0 14px 44px rgba(0,0,0,.55)}
+  @media(max-width:720px){.heroshot{position:static;transform:none;width:min(56vw,200px);margin:26px 0 0 auto}}
   .heroshot .hs{display:block;width:100%;aspect-ratio:419/500;
     background:var(--photo) center 28%/cover no-repeat;
     animation:materialize 2.8s cubic-bezier(.2,.8,.2,1) both, hsflick 6s 3s infinite steps(1)}
@@ -155,7 +157,7 @@
   .rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}.rv.d4{transition-delay:.32s}
 
   /* HERO */
-  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--line)}
+  .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--line)}
   .hero .kicker{font-size:15px}
   .bignum{font-family:'Anton';font-weight:400;font-size:clamp(96px,26vw,300px);line-height:.82;
     color:transparent;background:var(--grad);-webkit-background-clip:text;background-clip:text;
@@ -506,7 +508,7 @@
     </div>
     <p class="lead rv d3" style="margin-top:30px">To nie jest opowieść o kilometrach. To zapis wiosny,
       w której <b>wybrałaś ścieżkę</b> — i biegłaś nią, aż zmieniła Ciebie. 🐇</p>
-    <div class="heroshot rv d3" role="img" aria-label="Meta półmaratonu — Martyna z medalem, w folii NRC">
+    <div class="heroshot" role="img" aria-label="Meta półmaratonu — Martyna z medalem, w folii NRC">
       <div class="hs"></div><div class="grain"></div><div class="tag">DEKODOWANIE… META ✓</div>
     </div>
     <div class="scrollcue rv d4">przewiń — wchodzisz w symulację</div>
@@ -654,7 +656,7 @@
   <!-- WHEN -->
   <section id="when" style="order:5">
     <div class="kicker rv">Rozdział 4 — kiedy</div>
-    <h2 class="rv"><span class="glitch" data-text="Nigdy o świcie">Nigdy o świcie</span></h2>
+    <h2 class="rv"><span class="glitch" data-text="Sowa, nie skowronek">Sowa, nie skowronek</span></h2>
     <p class="lead rv d1">Godzina startu, czas lokalny. Zero porannych zrywów — pierwszy bieg dnia
       łapiesz najczęściej koło <b>11:00</b>, a resztę rozrzucasz na popołudnia, wieczory,
       a czasem i <b>noc</b> („Nocne bieganie" nie wzięło się znikąd). Dzień? <b>Sobota</b> rządzi.</p>
