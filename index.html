@@ -41,6 +41,37 @@
   .glow.g1{width:560px;height:560px;background:var(--a2);top:-160px;right:-120px}
   .glow.g2{width:480px;height:480px;background:var(--a3);bottom:10%;left:-160px;opacity:.16}
 
+  /* ── simulation layer: branching "Bandersnatch" decision-tree watermark,
+        faint scanlines, and glitch text. Purely atmospheric, z-index 0. ── */
+  .bander{position:fixed;right:-30px;top:9%;width:min(40vw,380px);height:auto;z-index:0;
+    opacity:.07;pointer-events:none;animation:banderflick 9s steps(1) infinite}
+  .bander line{stroke:var(--a2);stroke-width:1.4}
+  .bander circle{fill:var(--ink);stroke:var(--a2);stroke-width:1.4}
+  .bander .chosen{stroke:var(--a1);stroke-width:2.6}
+  .bander .node-on{fill:var(--a1);stroke:var(--a1)}
+  @keyframes banderflick{0%,96%,100%{opacity:.07}97%{opacity:.14}98%{opacity:.03}99%{opacity:.1}}
+  .scan{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.035;
+    background:repeating-linear-gradient(0deg,transparent 0 2px,#9fd 2px 3px)}
+  /* glitch clone for solid-colour headings (uses data-text) */
+  .glitch{position:relative;display:inline-block}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;
+    width:100%;pointer-events:none;opacity:.9}
+  .glitch::before{color:var(--a1);animation:glA 4s infinite steps(1)}
+  .glitch::after{color:var(--a2);animation:glB 4s infinite steps(1)}
+  @keyframes glA{0%,90%,100%{transform:none;clip-path:inset(0 0 100% 0)}
+    91%{transform:translate(-3px,-1px);clip-path:inset(0 0 62% 0)}
+    93%{transform:translate(2px,1px);clip-path:inset(45% 0 20% 0)}95%{clip-path:inset(0 0 100% 0)}}
+  @keyframes glB{0%,90%,100%{transform:none;clip-path:inset(100% 0 0 0)}
+    92%{transform:translate(3px,1px);clip-path:inset(60% 0 0 0)}
+    94%{transform:translate(-2px,-1px);clip-path:inset(35% 0 45% 0)}96%{clip-path:inset(100% 0 0 0)}}
+  /* subtle RGB-split jitter for the gradient hero number */
+  .gl-num{animation:glnum 6s infinite}
+  @keyframes glnum{0%,93%,100%{filter:none;transform:none}
+    94%{filter:drop-shadow(3px 0 var(--a2)) drop-shadow(-3px 0 var(--a1));transform:translateX(2px)}
+    95%{transform:translateX(-2px)}96%{filter:none;transform:none}}
+  @media(prefers-reduced-motion:reduce){
+    .bander{animation:none}.glitch::before,.glitch::after{display:none}.gl-num{animation:none}}
+
   main{position:relative;z-index:1;max-width:1040px;margin:0 auto;padding:0 24px;
     display:flex;flex-direction:column}
   section{padding:13vh 0;border-bottom:1px solid var(--line)}
@@ -363,19 +394,53 @@
 </head>
 <body>
 <div class="glow g1"></div><div class="glow g2"></div>
+<!-- Bandersnatch-style decision tree: every fork is a choice; one path is "chosen" -->
+<svg class="bander" viewBox="0 0 200 270" aria-hidden="true" preserveAspectRatio="xMidYMin meet">
+  <line x1="100" y1="15" x2="55" y2="95"/><line x1="100" y1="15" x2="145" y2="95"/>
+  <line x1="55" y1="95" x2="30" y2="175"/><line class="chosen" x1="55" y1="95" x2="80" y2="175"/>
+  <line x1="145" y1="95" x2="120" y2="175"/><line x1="145" y1="95" x2="170" y2="175"/>
+  <line x1="30" y1="175" x2="18" y2="250"/><line x1="30" y1="175" x2="46" y2="250"/>
+  <line x1="80" y1="175" x2="66" y2="250"/><line class="chosen" x1="80" y1="175" x2="94" y2="250"/>
+  <line x1="120" y1="175" x2="106" y2="250"/><line x1="120" y1="175" x2="134" y2="250"/>
+  <line x1="170" y1="175" x2="154" y2="250"/><line x1="170" y1="175" x2="182" y2="250"/>
+  <line class="chosen" x1="100" y1="15" x2="55" y2="95"/>
+  <circle class="node-on" cx="100" cy="15" r="5"/>
+  <circle class="node-on" cx="55" cy="95" r="5"/><circle cx="145" cy="95" r="5"/>
+  <circle cx="30" cy="175" r="5"/><circle class="node-on" cx="80" cy="175" r="5"/>
+  <circle cx="120" cy="175" r="5"/><circle cx="170" cy="175" r="5"/>
+  <circle cx="18" cy="250" r="4"/><circle cx="46" cy="250" r="4"/><circle cx="66" cy="250" r="4"/>
+  <circle class="node-on" cx="94" cy="250" r="4"/><circle cx="106" cy="250" r="4"/>
+  <circle cx="134" cy="250" r="4"/><circle cx="154" cy="250" r="4"/><circle cx="182" cy="250" r="4"/>
+</svg>
+<div class="scan" aria-hidden="true"></div>
 <main>
 
   <!-- HERO -->
   <section class="hero" style="order:0">
     <div class="kicker rv">Running Wrapped · Wrocław · wiosna 2026</div>
-    <div class="bignum rv d1"><span id="km">0</span><span class="unit">km</span></div>
+    <div class="bignum gl-num rv d1"><span id="km">0</span><span class="unit">km</span></div>
     <div class="substats">
       <div class="s rv d2"><div class="n" id="runs">0</div><div class="l">biegów</div></div>
       <div class="s rv d2"><div class="n" id="hours">0</div><div class="l">godzin w nogach</div></div>
       <div class="s rv d3"><div class="n">21<span style="font-size:.5em"> km</span></div><div class="l">najdłuższy bieg</div></div>
       <div class="s rv d3"><div class="n">89<span style="font-size:.5em"> dni</span></div><div class="l">od zera do półmaratonu</div></div>
     </div>
-    <div class="scrollcue rv d4">przewiń — to historia jednej wiosny</div>
+    <p class="lead rv d3" style="margin-top:30px">To nie jest opowieść o kilometrach. To zapis wiosny,
+      w której <b>wybrałaś ścieżkę</b> — i biegłaś nią, aż zmieniła Ciebie. 🐇</p>
+    <div class="scrollcue rv d4">przewiń — wchodzisz w symulację</div>
+  </section>
+
+  <!-- MANIFEST — simulation / choice theme -->
+  <section id="manifest" style="order:1">
+    <div class="kicker rv">// rozdział_00 — wybór_ścieżki.exe</div>
+    <h2 class="rv"><span class="glitch" data-text="Sama wybierasz">Sama wybierasz</span><br>ścieżkę.</h2>
+    <p class="lead rv d1">Jest taka teoria, że wszystko to symulacja, a my tylko klikamy w gotowe warianty.
+      Ty się z nią nie zgadzasz — i masz dowód. <b>Każdy z tych 31 biegów to była decyzja:</b>
+      wyjść albo zostać, iść dalej albo się poddać. Za każdym razem klikałaś „dalej".</p>
+    <p class="lead rv d2" style="margin-top:16px">To nie gra wybrała Twoją trasę. Ty wybrałaś —
+      i to, co miało być „tylko formą na trzydziestkę", zaczęło <b>przepisywać kod</b> reszty. 🕹️</p>
+    <div class="edu rv">🌀 <b>Efekt Bandersnatch.</b> Na każdym rozgałęzieniu była łatwiejsza opcja.
+      Nie brałaś jej. I dlatego ta historia w ogóle istnieje.</div>
   </section>
 
   <!-- VOLUME BY YEAR — hidden: only one season (2026), a year-by-year chart says nothing -->
@@ -390,19 +455,20 @@
   </section>
 
   <!-- MONTHLY AREA -->
-  <section id="explosion" style="order:1">
+  <section id="explosion" style="order:2">
     <div class="kicker rv">Rozdział 1 — rozbieg</div>
     <h2 class="rv">Cztery miesiące,<br>które zmieniły wszystko</h2>
-    <p class="lead rv d1">9 marca 2026 zrobiłaś pierwszy krok — <b>„Pierwsze koty za płoty"</b>, 2,7 km.
+    <p class="lead rv d1">9 marca 2026, pierwsze kliknięcie „dalej" — <b>„Pierwsze koty za płoty"</b>, 2,7 km.
       Każdy punkt to miesiąc. Z <b>13 km</b> w marcu urosło do <b>64 km</b> w maju,
-      Twojego najmocniejszego miesiąca. Jedna wiosna — kompletna przemiana.</p>
+      Twojego najmocniejszego miesiąca. Nie ma tu roku 2014 ani 2017 — jest jedna wiosna,
+      w której z nikąd stałaś się kimś, kto biega półmaratony.</p>
     <div class="area-wrap rv"><svg id="monthArea" viewBox="0 0 1000 280" preserveAspectRatio="none"></svg></div>
     <div class="edu rv">🌱 <b>Tak wygląda „od zera".</b> W styczniu i lutym Cię tu nie było — start to marzec.
       A do czerwca ta krzywa ani razu nie wróciła do zera. To nie zryw, to nowy nawyk.</div>
   </section>
 
   <!-- ZONES -->
-  <section id="zones" style="order:6">
+  <section id="zones" style="order:7">
     <div class="kicker rv">Rozdział 6 — serce</div>
     <h2 class="rv">Serce na<br>maksa</h2>
     <p class="lead rv d1">Rozkład czasu w strefach tętna. U większości początkujących królują strefy spokoju —
@@ -411,6 +477,8 @@
     <div class="chart stack-row" id="zoneStack"></div>
     <div class="stack-lbl" id="zoneYears"></div>
     <div class="legend" id="zoneLegend"></div>
+    <p class="lead rv d2" style="margin-top:20px;font-style:italic;opacity:.9">„Jak nie walnę tętna +190,
+      to nie czuję, że żyję, pzdr" — 9 maja. Bieganie jako dowód, że jesteś tu naprawdę. Bardzo nie-symulacja. 🔴</p>
     <div class="edu rv">💡 <b>Mała podpowiedź na dalej.</b> Ten ogień świetnie zbudował formę pod pierwszy sezon.
       Jeśli kiedyś zechcesz biegać dłużej i lżej, kilka wolnych kilometrów w Z1/Z2 w tygodniu
       da nogom oddech — ale charakter zostaw, jest Twój.</div>
@@ -429,11 +497,11 @@
   </section>
 
   <!-- WHERE -->
-  <section id="where" style="order:3">
+  <section id="where" style="order:4">
     <div class="kicker rv">Rozdział 3 — gdzie</div>
     <h2 class="rv">Twoje podwórko<br>to Wrocław</h2>
     <p class="lead rv d1"><b>Wrocław</b> to Twój dom — tu startuje większość biegów. Ale kilka
-      tras złapałaś też poza miastem: w <b>Głogowie</b> i okolicy. Przełącz widok i zobacz.</p>
+      tras złapałaś też poza miastem: w <b>Głogowie</b>, <b>Sławie</b> i na Śląsku. Przełącz widok i zobacz.</p>
 
     <div class="scene rv d1">
       <div class="scene-bar">
@@ -461,8 +529,9 @@
       </div>
     </div>
 
-    <p class="lead rv" style="margin-top:48px">A teraz zejdźmy na poziom ulicy — każda z tych tras
-      narysowana Twoim własnym GPS-em.</p>
+    <p class="lead rv" style="margin-top:48px">A teraz na poziom ulicy. Każda z tych linii to ścieżka,
+      którą <b>wybrałaś</b> — narysowana Twoim własnym GPS-em (nawet jeśli, jak sama pisałaś,
+      „gps mi nie sprzyja").</p>
     <div class="carousel">
       <div class="stage">
         <div class="slides" id="mapSlides" tabindex="0" role="group"
@@ -480,7 +549,7 @@
   </section>
 
   <!-- SCALE -->
-  <section id="scale" style="order:5">
+  <section id="scale" style="order:6">
     <div class="kicker rv">Rozdział 5 — w skali</div>
     <h2 class="rv">Co to właściwie<br>znaczy?</h2>
     <p class="lead rv d1">159 km w nogach i 3&nbsp;376 metrów w górę. Liczby jak liczby — dopóki
@@ -492,12 +561,15 @@
   </section>
 
   <!-- WHEN -->
-  <section id="when" style="order:4">
+  <section id="when" style="order:5">
     <div class="kicker rv">Rozdział 4 — kiedy</div>
     <h2 class="rv">Nigdy o świcie</h2>
     <p class="lead rv d1">Godzina startu, czas lokalny. Zero porannych zrywów — pierwszy bieg dnia
       łapiesz najczęściej koło <b>11:00</b>, a resztę rozrzucasz na popołudnia, wieczory,
       a czasem i <b>noc</b> („Nocne bieganie" nie wzięło się znikąd). Dzień? <b>Sobota</b> rządzi.</p>
+    <p class="lead rv d2" style="margin-top:16px;font-style:italic;opacity:.9">„Moim wrogiem nie jest tempo,
+      nie kolana, nie psychika, tylko globalne ocieplenie i +20°C i +65% wilgotności w połowie maja
+      o godzinie 20, wtf!!!" — i mimo to wychodziłaś.</p>
     <div class="two">
       <div class="rv d1"><div class="subh">Pora dnia (radar 24h — długość = liczba biegów)</div>
         <div class="hourchart" id="hourChart"></div></div>
@@ -509,19 +581,22 @@
   </section>
 
   <!-- DISTANCE -->
-  <section id="dist" style="order:2">
+  <section id="dist" style="order:3">
     <div class="kicker rv">Rozdział 2 — dystans</div>
     <h2 class="rv">Od dwóch kilometrów<br>do dwudziestu jeden</h2>
     <p class="lead rv d1">Rozkład długości wszystkich 31 biegów. Większość to krótkie, uczciwe wypady —
       <b>19 biegów poniżej 5 km</b>, dokładnie tak, jak się zaczyna. Ale ogon sięga aż po
       <b>21,6 km</b>: półmaraton z 6 czerwca.</p>
     <div class="bars" id="distBars"></div>
+    <p class="lead rv d2" style="margin-top:22px;font-style:italic;opacity:.9">„3.7 km zrobiłam, rekord mój
+      aktualny.. gps mi nie sprzyja. Ale serce trochę bardziej. A łydka dalej bez zmian
+      <span style="font-style:normal">¯\_(ツ)_/¯</span>" — 5 kwietnia. Każdy kolejny rekord bijesz z przymrużeniem oka.</p>
     <div class="edu rv">📏 <b>Każdy kilometr się liczy.</b> Te „małe" 2–3 km z marca zbudowały nogi,
-      które w czerwcu uniosły Cię przez 21 km. Nikt nie zaczyna od półmaratonu.</div>
+      które w czerwcu uniosły Cię przez 21 km. Nikt nie zaczyna od półmaratonu — Ty też nie zaczęłaś.</div>
   </section>
 
   <!-- RECORDS -->
-  <section id="records" style="order:7">
+  <section id="records" style="order:8">
     <div class="kicker rv">Rozdział 7 — rekordy</div>
     <h2 class="rv">Tablica chwały</h2>
     <p class="lead rv d1">6 czerwca, 21,6 km, tytuł biegu: <b>„O ja jebie"</b>. Chyba nie trzeba dodawać nic więcej. 🏅</p>
@@ -529,7 +604,7 @@
   </section>
 
   <!-- FUN -->
-  <section id="fun" style="order:8">
+  <section id="fun" style="order:9">
     <div class="kicker rv">Rozdział 8 — z przymrużeniem oka</div>
     <h2 class="rv">Astrologia biegacza</h2>
     <p class="lead rv d1">Czas na kompletnie nienaukowe wnioski. Bo czemu nie. 🔮</p>
@@ -545,15 +620,19 @@
   </section>
 
   <!-- OUTRO -->
-  <section class="outro" style="order:9">
+  <section class="outro" style="order:10">
     <div class="kicker rv">…a to dopiero początek</div>
-    <h2 class="rv">Od „pierwszych kotów"<br>do „o ja jebie".</h2>
+    <h2 class="rv"><span class="glitch" data-text="Od „pierwszych kotów”">Od „pierwszych kotów"</span><br>do „o ja jebie".</h2>
     <p class="lead rv d1">Jedna wiosna. 31 biegów, 159 km, półmaraton w nogach — i forma na trzydziestkę,
-      którą zrobiłaś sobie sama. Bo o to chodziło: udowodnić sobie, że możesz. A dalej?
-      5–10 km dla siebie, po swojemu. To Twoja misja zmiany siebie — i właśnie się udaje. 🩵</p>
+      którą zrobiłaś sobie sama. Bo o to chodziło: <b>udowodnić sobie, że możesz</b>. I udowodniłaś.</p>
+    <p class="lead rv d2" style="margin-top:16px">Symulacja czy nie — ścieżkę wybierasz Ty. Każde „wyjdę"
+      zamiast „jutro" to był <b>Twój klik</b>, i to on przepisał ten sezon. A dalej? 5–10 km dla siebie,
+      po swojemu. To Twoja misja zmiany siebie — i właśnie leci dalej. 🩵</p>
+    <p class="lead rv d3" style="margin-top:16px;font-style:italic;opacity:.85">Ostatni zapis, 23 czerwca:
+      „sterowana zdalnie klima to aktualnie mój ulubiony przedmiot w mieszkaniu 🫠❤️". Ciąg dalszy — Twój wybór.</p>
   </section>
 
-  <footer class="rv" style="order:10">Running Wrapped · dane ze Strava · Wrocław 2026</footer>
+  <footer class="rv" style="order:11">Running Wrapped · dane ze Strava · Wrocław 2026 · <span style="opacity:.6">// koniec_symulacji</span></footer>
 </main>
 
 <script>
