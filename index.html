@@ -92,6 +92,19 @@
     92%{opacity:0;top:78%}94%{opacity:.5;top:47%}95%{opacity:0}}
   .scan{animation:scandrift 6s linear infinite}
   @keyframes scandrift{0%{background-position:0 0}100%{background-position:0 3px}}
+
+  /* finish-line photo frame */
+  .finishwrap{margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .finish{position:relative;max-width:330px;width:100%;border-radius:var(--r-lg);overflow:hidden;
+    border:1px solid var(--line);box-shadow:0 14px 50px rgba(0,0,0,.55)}
+  .finish img{display:block;width:100%;height:auto}
+  .finish::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:var(--r-lg);
+    box-shadow:inset 0 0 0 2px rgba(255,143,208,.4)}
+  .finish::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.06;
+    background:repeating-linear-gradient(0deg,transparent 0 2px,#9fd 2px 3px)}
+  .finish .fcap{position:absolute;left:14px;right:14px;bottom:12px;z-index:3;font-family:'Anton';
+    font-size:15px;letter-spacing:.02em;text-shadow:0 2px 14px #000,0 0 22px #000}
+  .finishwrap .credit{color:var(--muted);font-size:12.5px;font-style:italic;text-align:center;max-width:40ch}
   @media(prefers-reduced-motion:reduce){
     .bander,.gl-num,.figdecor,.figbig,.glitchbar,.scan{animation:none}
     .glitch::before,.glitch::after{display:none}.glitchbar{display:none}}
@@ -439,14 +452,16 @@
 <div class="scan" aria-hidden="true"></div>
 <!-- the maze-figure icon: a blocky silhouette "carved out of the maze", reused around -->
 <svg class="figsym" aria-hidden="true"><defs><g id="mzfig">
-  <rect x="46" y="0" width="28" height="42"/><rect x="6" y="40" width="108" height="36"/>
-  <rect x="30" y="74" width="66" height="40"/><rect x="30" y="110" width="26" height="22"/>
-  <rect x="70" y="110" width="26" height="22"/>
+  <!-- exact shape from the provided icon: body + central chimney on top + central notch at the bottom -->
+  <rect x="80" y="0" width="70" height="30"/>
+  <rect x="0" y="30" width="230" height="60"/>
+  <rect x="0" y="90" width="80" height="60"/>
+  <rect x="150" y="90" width="80" height="60"/>
 </g></defs></svg>
-<svg class="figdecor f1" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
-<svg class="figdecor f2" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
-<svg class="figdecor f3" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
-<svg class="figdecor f4" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
+<svg class="figdecor f1" viewBox="0 0 230 150" aria-hidden="true"><use href="#mzfig"/></svg>
+<svg class="figdecor f2" viewBox="0 0 230 150" aria-hidden="true"><use href="#mzfig"/></svg>
+<svg class="figdecor f3" viewBox="0 0 230 150" aria-hidden="true"><use href="#mzfig"/></svg>
+<svg class="figdecor f4" viewBox="0 0 230 150" aria-hidden="true"><use href="#mzfig"/></svg>
 <div class="glitchbar" aria-hidden="true"></div>
 <main>
 
@@ -467,12 +482,15 @@
 
   <!-- MANIFEST — simulation / choice theme -->
   <section id="manifest" style="order:1;position:relative">
-    <svg class="figbig" viewBox="0 0 120 132" aria-hidden="true"><use href="#mzfig"/></svg>
+    <svg class="figbig" viewBox="0 0 230 150" aria-hidden="true"><use href="#mzfig"/></svg>
     <div class="kicker rv">// rozdział_00 — wybór_ścieżki.exe</div>
     <h2 class="rv"><span class="glitch" data-text="Sama wybierasz">Sama wybierasz</span><br>ścieżkę.</h2>
     <p class="lead rv d1">Jest taka teoria, że wszystko to symulacja, a my tylko klikamy w gotowe warianty.
       Ty się z nią nie zgadzasz — i masz dowód. <b>Każdy z tych 31 biegów to była decyzja:</b>
       wyjść albo zostać, iść dalej albo się poddać. Za każdym razem klikałaś „dalej".</p>
+    <p class="lead rv d2" style="margin-top:16px">Zacznijmy tam, gdzie wielu by odpuściło: <b>w lutym 2026
+      wycięto Ci woreczek żółciowy</b>. Miesiąc po operacji zasznurowałaś buty. Cztery miesiące po niej
+      przebiegłaś <b>półmaraton</b>. Tyle w temacie „nie dam rady".</p>
     <p class="lead rv d2" style="margin-top:16px">Wyobraź sobie labirynt — ściany, ślepe zaułki, tysiąc
       powodów, żeby zawrócić. Większość w nim zostaje. Ty przeszłaś na drugą stronę i wyszłaś z niego
       w konkretnym kształcie: <b>biegaczki</b>. To nie gra narysowała Twoją trasę — narysowałaś ją sama,
@@ -497,10 +515,10 @@
   <section id="explosion" style="order:2">
     <div class="kicker rv">Rozdział 1 — rozbieg</div>
     <h2 class="rv">Cztery miesiące,<br>które zmieniły wszystko</h2>
-    <p class="lead rv d1">9 marca 2026, pierwsze kliknięcie „dalej" — <b>„Pierwsze koty za płoty"</b>, 2,7 km.
-      Każdy punkt to miesiąc. Z <b>13 km</b> w marcu urosło do <b>64 km</b> w maju,
-      Twojego najmocniejszego miesiąca. Nie ma tu roku 2014 ani 2017 — jest jedna wiosna,
-      w której z nikąd stałaś się kimś, kto biega półmaratony.</p>
+    <p class="lead rv d1">9 marca 2026, kilka tygodni po operacji, pierwsze kliknięcie „dalej" —
+      <b>„Pierwsze koty za płoty"</b>, 2,7 km. Każdy punkt to miesiąc. Z <b>13 km</b> w marcu urosło do
+      <b>64 km</b> w maju, Twojego najmocniejszego miesiąca. Nie ma tu roku 2014 ani 2017 — jest jedna
+      wiosna, w której z nikąd stałaś się kimś, kto biega półmaratony.</p>
     <div class="area-wrap rv"><svg id="monthArea" viewBox="0 0 1000 280" preserveAspectRatio="none"></svg></div>
     <div class="edu rv">🌱 <b>Tak wygląda „od zera".</b> W styczniu i lutym Cię tu nie było — start to marzec.
       Nikt Ci nie obiecał, że pójdzie łatwo — po prostu wychodziłaś raz za razem, aż z „może kiedyś"
